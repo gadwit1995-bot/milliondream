@@ -1,0 +1,2628 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="พอร์ต 10 ล้าน" />
+  <meta name="theme-color" content="#0A0E14" />
+  <title>ระบบจำลองพอร์ตหุ้นพิชิตเป้าหมาย 10 ล้าน (iOS Home Screen PWA Edition)</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans, Noto Sans Thai, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '"Noto Sans Thai"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            obsidian: '#0A0E14',
+            card: '#121822',
+            subcard: '#182030',
+            borderline: '#1E293B',
+            emeraldSignal: '#10B981',
+            royalBlue: '#3B82F6',
+            amberGold: '#F59E0B',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --bg-canvas: #0A0E14;
+      --bg-card: #121822;
+      --bg-subcard: #182030;
+      --border-crisp: #1E293B;
+      --text-primary: #F1F5F9;
+      --text-secondary: #94A3B8;
+      --accent-emerald: #10B981;
+      --accent-blue: #3B82F6;
+      --accent-amber: #F59E0B;
+      --accent-rose: #F43F5E;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+      background-color: #06090E;
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      overscroll-behavior-y: none;
+    }
+
+    /* Strict iPhone PWA Viewport Shell (375px - 430px) */
+    .ios-app-shell {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      background-color: var(--bg-canvas);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 24px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .tabular-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ios-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-crisp);
+      border-radius: 18px;
+      padding: 16px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .ios-subcard {
+      background-color: var(--bg-subcard);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 12px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* CRITICAL: 16px font size on all inputs/selects prevents iOS Safari auto-zoom on focus */
+    input, select, textarea {
+      font-size: 16px !important;
+      line-height: 1.35 !important;
+    }
+
+    /* Sticky Top Safe-Area Header */
+    .ios-top-bar {
+      background: rgba(10, 14, 20, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-crisp);
+      padding-top: max(12px, env(safe-area-inset-top));
+    }
+
+    /* Fixed Bottom Safe-Area Tab Navigation */
+    .ios-bottom-bar {
+      background: rgba(18, 24, 34, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--border-crisp);
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    /* Custom Touch Sliders */
+    input[type="range"].ios-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      background: #1E293B;
+      border-radius: 999px;
+      outline: none;
+    }
+
+    input[type="range"].ios-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #F1F5F9;
+      border: 3px solid #10B981;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+      cursor: pointer;
+    }
+
+    input[type="range"].ios-slider.blue-thumb::-webkit-slider-thumb {
+      border-color: #3B82F6;
+    }
+
+    input[type="range"].ios-slider.amber-thumb::-webkit-slider-thumb {
+      border-color: #F59E0B;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ios-app-shell">
+
+    <!-- Floating iOS Toast Notification -->
+    <div id="iosToast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-200 transform -translate-y-2 w-[92%] max-w-[396px]">
+      <div class="bg-[#182030] border border-[#10B981]/50 text-[#F1F5F9] px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-xs font-semibold">
+        <span id="iosToastMsg" class="leading-relaxed">อัปเดตข้อมูลพอร์ตเรียบร้อยแล้ว</span>
+        <span class="w-2.5 h-2.5 rounded-full bg-[#10B981] shrink-0"></span>
+      </div>
+    </div>
+
+    <!-- iOS Educational Modal (Explains CAGR, Rebalance, DCA) -->
+    <div id="infoModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-end sm:items-center justify-center p-3">
+      <div class="bg-[#121822] border border-[#1E293B] rounded-3xl w-full max-w-[404px] p-5 space-y-3.5 max-h-[85dvh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-[#1E293B] pb-3">
+          <h3 class="text-base font-bold text-[#F1F5F9]">คู่มือระบบคำนวณพอร์ต</h3>
+          <button onclick="toggleInfoModal(false)" class="px-3 py-1 rounded-xl bg-[#182030] text-xs font-bold text-[#94A3B8]">ปิด</button>
+        </div>
+
+        <div class="ios-subcard space-y-1">
+          <div class="text-xs font-bold text-[#10B981]">1. CAGR คืออะไร?</div>
+          <p class="text-xs text-[#94A3B8] leading-relaxed">
+            <strong class="text-[#F1F5F9]">Compound Annual Growth Rate</strong> คือ อัตราการเติบโตเฉลี่ยทบต้นต่อปีของพอร์ต โดยรวมทั้งกำไรส่วนต่างราคาหุ้น (Capital Gain) และเงินปันผลสุทธิหลังหักภาษีที่นำกลับไปซื้อหุ้นทบต้น (DRIP)
+          </p>
+        </div>
+
+        <div class="ios-subcard space-y-1">
+          <div class="text-xs font-bold text-[#3B82F6]">2. Rebalance (ปรับสมดุลพอร์ต) คืออะไร?</div>
+          <p class="text-xs text-[#94A3B8] leading-relaxed">
+            เมื่อเวลาผ่านไป หุ้นที่โตเร็วจะมีสัดส่วนบวมขึ้นจนพอร์ตเสี่ยงเกินไป การเปิด <strong class="text-[#F1F5F9]">Rebalance ทุกสิ้นปี</strong> คือการรินขายหุ้นที่โตเกินสัดส่วนไปซื้อตัวอื่นเพื่อให้สัดส่วนกลับมาเท่าแผนตั้งต้น (ช่วยคุมความเสี่ยง) ส่วน <strong class="text-[#F1F5F9]">ปล่อยโตตามธรรมชาติ</strong> จะปล่อยให้หุ้นตัวท็อปวิ่งเต็มที่ จึงถึงเป้าหมายเร็วกว่า
+          </p>
+        </div>
+
+        <div class="ios-subcard space-y-1">
+          <div class="text-xs font-bold text-[#F59E0B]">3. เงิน DCA รายเดือนทำงานอย่างไร?</div>
+          <p class="text-xs text-[#94A3B8] leading-relaxed">
+            เงินที่คุณตั้งเติมรายเดือน (เช่น 15,000 หรือ 35,000 บาท/เดือน) <strong class="text-[#F1F5F9]">ไม่ใช่การเก็บเงินสดเฉยๆ</strong> แต่ระบบจะนำเงินก้อนนี้ไป <strong class="text-[#F1F5F9]">กระจายซื้อหุ้นแต่ละตัวในพอร์ตทุกเดือนโดยอัตโนมัติ</strong> ตามสัดส่วน DCA % ที่คุณตั้งไว้ และคิดผลตอบแทนทบต้นให้ทันที
+          </p>
+        </div>
+
+        <button onclick="toggleInfoModal(false)" class="w-full py-3 rounded-2xl bg-[#10B981] text-[#0A0E14] font-bold text-sm">
+          เข้าใจแล้ว
+        </button>
+      </div>
+    </div>
+
+    <!-- Top Sticky Navigation Bar -->
+    <header class="ios-top-bar sticky top-0 z-30 px-3.5 pb-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-10 h-10 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M3 3v18h18" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 14l4-4 4 3 5-6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-[15px] font-extrabold text-[#F1F5F9] truncate">พอร์ตพิชิต 10 ล้าน</h1>
+              <span id="hdrGoalBadge" class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#10B981]/15 text-[#10B981] tabular-num shrink-0">
+                +10M
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] text-[#94A3B8] mt-0.5 min-w-0">
+              <span id="hdrUsdRate" class="tabular-num truncate">1 USD = ฿34.45</span>
+              <span>•</span>
+              <span id="hdrCagrText" class="text-[#10B981] font-semibold tabular-num shrink-0">CAGR 9.9%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="fetchLiveExchangeRates(true)"
+            class="px-2.5 py-2 rounded-xl bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-semibold text-[#F1F5F9] flex items-center gap-1">
+            <svg id="hdrFxSpinner" class="w-3.5 h-3.5 text-[#3B82F6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke-linecap="round"/>
+              <path d="M3 3v5h5" stroke-linecap="round"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" stroke-linecap="round"/>
+            </svg>
+            <span>เรทเงิน</span>
+          </button>
+
+          <button onclick="toggleInfoModal(true)" aria-label="คู่มือคำศัพท์"
+            class="w-9 h-9 rounded-xl bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-bold text-[#3B82F6] flex items-center justify-center">
+            ?
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 px-3.5 pt-3.5 pb-28 space-y-4 w-full min-w-0">
+
+      <!-- =================================================================
+           TAB 1: สรุป & สมดุล (OVERVIEW, REVERSE TARGET SOLVER, & OPTIMIZER)
+           ================================================================= -->
+      <section id="tab_overview" class="space-y-4 min-w-0">
+
+        <!-- 1. HERO SUMMARY CARD -->
+        <div class="ios-card space-y-3.5">
+          <!-- Mode Switcher Pill -->
+          <div class="grid grid-cols-2 gap-1.5 bg-[#0A0E14] p-1 rounded-xl border border-[#1E293B]">
+            <button id="heroModeNetBtn" onclick="setTargetMode('net_new')"
+              class="py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+              ไม่รวมทุนต้น (+10M ใหม่)
+            </button>
+            <button id="heroModeTotalBtn" onclick="setTargetMode('total')"
+              class="py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+              รวมทุนต้น (แตะเป้า)
+            </button>
+          </div>
+
+          <!-- Primary KPI Row -->
+          <div class="flex items-baseline justify-between gap-2 pt-0.5">
+            <div class="min-w-0">
+              <div class="text-xs text-[#94A3B8]">ระยะเวลาที่ใช้ไปถึงเป้าหมาย</div>
+              <div id="kpiTimeReached" class="text-[28px] leading-tight font-extrabold text-[#F1F5F9] tabular-num tracking-tight mt-0.5">
+                7 ปี 11 เดือน
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-xs text-[#94A3B8]">ผลตอบแทนพอร์ต (CAGR)</div>
+              <div id="kpiBlendedCagr" class="text-[22px] leading-tight font-extrabold text-[#10B981] tabular-num mt-0.5">
+                9.85%/ปี
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Description Banner -->
+          <div id="kpiTargetSummaryBanner" class="text-xs text-[#94A3B8] bg-[#0A0E14] px-3 py-2 rounded-xl border border-[#1E293B] leading-relaxed">
+            พอร์ตรวมปลายทางต้องแตะ <span class="text-[#F1F5F9] font-bold tabular-num">฿13,000,000</span> (ทุนต้น ฿3.0M + สร้างใหม่ ฿10.0M)
+          </div>
+
+          <!-- 2x2 Clean Metric Grid -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="ios-subcard">
+              <div class="text-[11px] text-[#94A3B8]">มูลค่าพอร์ต ณ วันสำเร็จ</div>
+              <div id="kpiFinalPortfolio" class="text-[15px] font-bold text-[#F1F5F9] tabular-num mt-1">฿13,045,000</div>
+              <div id="kpiNetNewSub" class="text-[11px] text-[#10B981] font-medium tabular-num mt-0.5">ส่วนเพิ่ม +฿10.05M</div>
+            </div>
+
+            <div class="ios-subcard">
+              <div class="text-[11px] text-[#94A3B8]">ปันผลสุทธิ ณ ปีเป้าหมาย</div>
+              <div id="kpiMonthlyDiv" class="text-[15px] font-bold text-[#F59E0B] tabular-num mt-1">฿25,800/ด.</div>
+              <div id="kpiAnnualDiv" class="text-[11px] text-[#94A3B8] tabular-num mt-0.5">฿309,600/ปี</div>
+            </div>
+
+            <div class="ios-subcard">
+              <div class="text-[11px] text-[#94A3B8]">เงินทุนใส่เองรวม (ต้น+DCA)</div>
+              <div id="kpiTotalPrincipal" class="text-[15px] font-bold text-[#3B82F6] tabular-num mt-1">฿6,325,000</div>
+              <div id="kpiPrincipalSplit" class="text-[10.5px] text-[#94A3B8] tabular-num mt-0.5 leading-snug">ต้น ฿3.00M + DCA ฿3.33M</div>
+            </div>
+
+            <div class="ios-subcard">
+              <div class="text-[11px] text-[#94A3B8]">กำไรทบต้นสุทธิ</div>
+              <div id="kpiTotalProfit" class="text-[15px] font-bold text-[#10B981] tabular-num mt-1">+฿6,720,000</div>
+              <div id="kpiProfitSplit" class="text-[10.5px] text-[#94A3B8] tabular-num mt-0.5 leading-snug">หุ้น +฿5.21M | ปันผล +฿1.51M</div>
+            </div>
+          </div>
+
+          <!-- Stacked Wealth Breakdown Bar -->
+          <div class="space-y-1.5 pt-0.5">
+            <div class="flex items-center justify-between text-[11px] text-[#94A3B8]">
+              <span>สัดส่วนโครงสร้างพอร์ตปลายทาง</span>
+              <span id="kpiProfitShareText" class="text-[#10B981] font-semibold tabular-num">กำไร 51% ของพอร์ต</span>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-[#0A0E14] overflow-hidden flex border border-[#1E293B]">
+              <div id="barWidthInitial" class="h-full bg-[#3B82F6]" style="width: 23%"></div>
+              <div id="barWidthDca" class="h-full bg-[#60A5FA]" style="width: 26%"></div>
+              <div id="barWidthProfit" class="h-full bg-[#10B981]" style="width: 51%"></div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-[#94A3B8]">
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span>ทุนตั้งต้น</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#60A5FA]"></span>เงินเติม DCA</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#10B981]"></span>กำไรทบต้น</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ORDER & COLLAPSE CONTROL BAR (เลือกหน้าต่างลำดับที่ 2 และย่อ/ขยาย) -->
+        <div class="ios-subcard !p-3 space-y-2 border border-[#1E293B]">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-bold text-[#F1F5F9]">📌 เลือกหน้าต่างลำดับที่ 2 (แสดงต่อจากการ์ดหลัก)</span>
+            <button onclick="collapseAllSecondaryModules()"
+              class="px-2 py-1 rounded-lg bg-[#0A0E14] border border-[#1E293B] text-[11px] font-semibold text-[#94A3B8] active:text-[#F1F5F9] shrink-0">
+              ย่อทั้งหมด
+            </button>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button id="pin2Btn_rebalance" onclick="promoteSectionToSecond('rebalance')"
+              class="py-2 px-1.5 rounded-xl text-[11px] font-bold border transition text-center truncate">
+              ⚖️ ปรับสมดุลพอร์ต
+            </button>
+            <button id="pin2Btn_reverse" onclick="promoteSectionToSecond('reverse')"
+              class="py-2 px-1.5 rounded-xl text-[11px] font-bold border transition text-center truncate">
+              🎯 คำนวณปีเป้า
+            </button>
+            <button id="pin2Btn_chart" onclick="promoteSectionToSecond('chart')"
+              class="py-2 px-1.5 rounded-xl text-[11px] font-bold border transition text-center truncate">
+              📈 กราฟเส้นทาง
+            </button>
+          </div>
+        </div>
+
+        <!-- REORDERABLE & COLLAPSIBLE SECONDARY MODULES CONTAINER -->
+        <div id="secondaryModulesStack" class="space-y-3 min-w-0">
+
+          <!-- MODULE: REBALANCE & AUTO-OPTIMIZE FASTEST ALLOCATION -->
+          <div id="secCard_rebalance" class="ios-card !p-0 overflow-hidden transition-all">
+            <div class="p-3.5 flex items-center justify-between gap-2 bg-[#121822]">
+              <button onclick="toggleSecondarySection('rebalance')" class="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+                <span id="orderBadge_rebalance" class="w-6 h-6 rounded-lg bg-[#10B981]/15 border border-[#10B981]/40 text-[#10B981] text-xs font-extrabold flex items-center justify-center tabular-num shrink-0">
+                  #2
+                </span>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-[#F1F5F9] truncate">⚖️ ปรับสมดุลพอร์ต & เร่งสัดส่วนเร็วสุด</div>
+                  <div id="collapsedSub_rebalance" class="text-[11px] text-[#94A3B8] truncate mt-0.5">
+                    จัดสัดส่วนก้อนแรก / DCA & Rebalance
+                  </div>
+                </div>
+              </button>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="moveSecondarySection('rebalance', -1)" title="เลื่อนขึ้น"
+                  class="w-7 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-bold text-[#94A3B8] flex items-center justify-center">▲</button>
+                <button onclick="moveSecondarySection('rebalance', 1)" title="เลื่อนลง"
+                  class="w-7 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-bold text-[#94A3B8] flex items-center justify-center">▼</button>
+                <button id="chevronBtn_rebalance" onclick="toggleSecondarySection('rebalance')"
+                  class="px-2.5 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-[11px] font-bold text-[#10B981] flex items-center justify-center">
+                  ย่อ ▲
+                </button>
+              </div>
+            </div>
+
+            <div id="secBody_rebalance" class="px-4 pb-4 pt-3 border-t border-[#1E293B] space-y-4">
+              <div class="flex items-center justify-between gap-2">
+                <span class="inline-block px-2 py-0.5 text-[11px] font-bold rounded-md bg-[#10B981]/15 text-[#10B981]">
+                  จัดสัดส่วนให้ถึงเป้าเร็วที่สุด (Speed Optimizer)
+                </span>
+                <button onclick="toggleInfoModal(true)" class="text-xs font-semibold text-[#3B82F6] shrink-0 underline">
+                  Rebalance คือ?
+                </button>
+              </div>
+
+              <!-- 3 Auto-Optimize Buttons -->
+              <div class="space-y-2">
+                <button onclick="optimizePortfolioWeights('smart_fast')"
+                  class="w-full py-3 px-3.5 rounded-2xl bg-[#10B981] active:bg-[#059669] text-[#0A0E14] font-bold text-xs flex items-center justify-between shadow-lg">
+                  <span>⚡ จัดสัดส่วนถึงเป้าเร็วสุด (กระจายเสี่ยง)</span>
+                  <span class="bg-[#0A0E14]/20 px-2 py-0.5 rounded-md font-mono text-[11px] shrink-0">แนะนำ</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="optimizePortfolioWeights('max_speed')"
+                    class="py-2.5 px-2.5 rounded-xl bg-[#182030] active:bg-[#1E293B] border border-[#10B981]/40 text-xs font-bold text-[#10B981] text-center truncate">
+                    🚀 เน้นตัวท็อป 100% (เร็วสุดขีด)
+                  </button>
+                  <button onclick="optimizePortfolioWeights('equal')"
+                    class="py-2.5 px-2.5 rounded-xl bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-semibold text-[#F1F5F9] text-center truncate">
+                    ⚖️ เกลี่ยเท่ากัน
+                  </button>
+                </div>
+              </div>
+
+              <!-- Rebalance Yearly Toggle -->
+              <div class="pt-2 border-t border-[#1E293B] space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-semibold text-[#F1F5F9]">วิธีจัดการพอร์ตปลายปี (Rebalance)</span>
+                  <span id="rebalanceDiffBadge" class="text-[11px] text-[#10B981] font-semibold tabular-num">ปล่อยโตถึงเป้าเร็วกว่า</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 bg-[#0A0E14] p-1 rounded-xl border border-[#1E293B]">
+                  <button id="btnRebalNatural" onclick="setAutoRebalance(false)"
+                    class="py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+                    ปล่อยโตตามธรรมชาติ
+                  </button>
+                  <button id="btnRebalAnnual" onclick="setAutoRebalance(true)"
+                    class="py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+                    Rebalance ทุกสิ้นปี
+                  </button>
+                </div>
+              </div>
+
+              <!-- Dual Allocation Slider Switcher (Initial Lump Sum % vs Monthly DCA %) -->
+              <div class="pt-2 border-t border-[#1E293B] space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="grid grid-cols-2 gap-1 bg-[#0A0E14] p-1 rounded-xl border border-[#1E293B] flex-1 min-w-0">
+                    <button id="btnSlideInitial" onclick="setQuickSliderMode('initial')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+                      เงินก้อนแรก (%)
+                    </button>
+                    <button id="btnSlideDca" onclick="setQuickSliderMode('dca')"
+                      class="py-1.5 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+                      เติมรายเดือน DCA (%)
+                    </button>
+                  </div>
+                  <button onclick="normalizePortfolioWeights()"
+                    class="px-2.5 py-2 rounded-xl bg-[#182030] border border-[#1E293B] text-xs font-bold text-[#3B82F6] shrink-0">
+                    รวม 100%
+                  </button>
+                </div>
+
+                <!-- DCA Explanation Banner -->
+                <div id="dcaFlowInfoBanner" class="text-[11px] text-[#94A3B8] bg-[#0A0E14] px-3 py-2 rounded-xl border border-[#1E293B] leading-relaxed">
+                  💡 <strong class="text-[#F1F5F9]">เงิน DCA รายเดือน (<span id="bannerDcaAmt" class="tabular-num text-[#F59E0B]">฿35,000</span>/ด.)</strong> จะถูกระบบนำไปกระจายซื้อหุ้นแต่ละตัวตามสัดส่วน DCA % อัตโนมัติทุกเดือน
+                </div>
+
+                <div class="flex items-center justify-between text-xs px-0.5">
+                  <span id="sliderModeSubtitle" class="text-[#94A3B8]">เลื่อนปรับสัดส่วนเงินก้อนแรก:</span>
+                  <span id="sliderTotalSumBadge" class="font-bold text-[#10B981] tabular-num">รวม 100%</span>
+                </div>
+
+                <!-- Sliders Container -->
+                <div id="overviewSlidersList" class="space-y-2.5">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODULE: TARGET YEAR REVERSE CALCULATOR (คำนวณย้อนกลับตามปีเป้าหมาย เช่น 6 ปี) -->
+          <div id="secCard_reverse" class="ios-card !p-0 overflow-hidden border-[#F59E0B]/40 transition-all">
+            <div class="p-3.5 flex items-center justify-between gap-2 bg-[#121822]">
+              <button onclick="toggleSecondarySection('reverse')" class="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+                <span id="orderBadge_reverse" class="w-6 h-6 rounded-lg bg-[#F59E0B]/15 border border-[#F59E0B]/40 text-[#F59E0B] text-xs font-extrabold flex items-center justify-center tabular-num shrink-0">
+                  #3
+                </span>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-[#F1F5F9] truncate">🎯 คำนวณย้อนกลับตามปีเป้าหมาย</div>
+                  <div id="collapsedSub_reverse" class="text-[11px] text-[#F59E0B] font-semibold tabular-num truncate mt-0.5">
+                    เป้า 6 ปี: ต้องทำกำไรเฉลี่ย 17.45%/ปี
+                  </div>
+                </div>
+              </button>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="moveSecondarySection('reverse', -1)" title="เลื่อนขึ้น"
+                  class="w-7 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-bold text-[#94A3B8] flex items-center justify-center">▲</button>
+                <button onclick="moveSecondarySection('reverse', 1)" title="เลื่อนลง"
+                  class="w-7 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-bold text-[#94A3B8] flex items-center justify-center">▼</button>
+                <button id="chevronBtn_reverse" onclick="toggleSecondarySection('reverse')"
+                  class="px-2.5 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-[11px] font-bold text-[#3B82F6] flex items-center justify-center">
+                  เปิด ▼
+                </button>
+              </div>
+            </div>
+
+            <div id="secBody_reverse" class="px-4 pb-4 pt-3 border-t border-[#1E293B] space-y-3.5 hidden">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-sm font-bold text-[#F1F5F9]">
+                  ถ้าตั้งเป้าสำเร็จภายใน <span id="revYearTitleNum" class="text-[#F59E0B] tabular-num">6</span> ปี?
+                </h2>
+
+                <!-- Year Stepper -->
+                <div class="flex items-center gap-1 bg-[#0A0E14] p-1 rounded-xl border border-[#1E293B] shrink-0">
+                  <button onclick="stepReverseYear(-1)"
+                    class="w-8 h-8 rounded-lg bg-[#182030] active:bg-[#1E293B] text-[#F1F5F9] font-bold text-base flex items-center justify-center">−</button>
+                  <span id="revYearPill" class="px-2 text-xs font-bold text-[#F59E0B] tabular-num">6 ปี</span>
+                  <button onclick="stepReverseYear(1)"
+                    class="w-8 h-8 rounded-lg bg-[#182030] active:bg-[#1E293B] text-[#F1F5F9] font-bold text-base flex items-center justify-center">+</button>
+                </div>
+              </div>
+
+              <!-- Slider 1 to 25 years -->
+              <input id="revYearSlider" type="range" min="1" max="25" step="1" value="6"
+                oninput="onReverseYearSlide(this.value)"
+                class="ios-slider amber-thumb" />
+
+              <!-- Comparison Grid: Required CAGR vs Required DCA -->
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="ios-subcard border border-[#F59E0B]/30">
+                  <div class="text-[11px] text-[#94A3B8]">ต้องทำผลตอบแทนเฉลี่ย</div>
+                  <div id="revRequiredCagr" class="text-lg font-extrabold text-[#F59E0B] tabular-num mt-1">
+                    17.45%/ปี
+                  </div>
+                  <div id="revCagrStatusText" class="text-[11px] text-[#94A3B8] tabular-num mt-0.5">
+                    พอร์ตตอนนี้ 9.85%/ปี
+                  </div>
+                </div>
+
+                <div class="ios-subcard">
+                  <div class="text-[11px] text-[#94A3B8]">หรือถ้าคงผลตอบแทนเดิม</div>
+                  <div id="revRequiredDca" class="text-[15px] font-bold text-[#3B82F6] tabular-num mt-1">
+                    DCA ฿68,500/ด.
+                  </div>
+                  <div id="revDcaStatusText" class="text-[11px] text-[#94A3B8] tabular-num mt-0.5">
+                    จากเดิม ฿35,000/ด.
+                  </div>
+                </div>
+              </div>
+
+              <div id="revSummaryNote" class="text-xs text-[#94A3B8] bg-[#0A0E14] px-3 py-2.5 rounded-xl border border-[#1E293B] leading-relaxed">
+                คำนวณจากเงินต้น ฿3,000,000 + เงิน DCA รายเดือนที่กระจายซื้อหุ้นในพอร์ตทุกเดือน
+              </div>
+
+              <!-- Action Buttons to Apply Required DCA or Optimize Portfolio -->
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="applySolvedDcaForTargetYear()"
+                  class="py-2.5 px-3 rounded-xl bg-[#3B82F6]/15 active:bg-[#3B82F6]/25 border border-[#3B82F6]/40 text-xs font-bold text-[#3B82F6] text-center truncate">
+                  ปรับ DCA ตามยอดนี้
+                </button>
+                <button onclick="optimizePortfolioWeights('smart_fast')"
+                  class="py-2.5 px-3 rounded-xl bg-[#10B981]/15 active:bg-[#10B981]/25 border border-[#10B981]/40 text-xs font-bold text-[#10B981] text-center truncate">
+                  ⚡ เร่งสัดส่วนพอร์ต
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODULE: INTERACTIVE HiDPI CANVAS PROJECTION CHART -->
+          <div id="secCard_chart" class="ios-card !p-0 overflow-hidden transition-all">
+            <div class="p-3.5 flex items-center justify-between gap-2 bg-[#121822]">
+              <button onclick="toggleSecondarySection('chart')" class="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+                <span id="orderBadge_chart" class="w-6 h-6 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#3B82F6] text-xs font-extrabold flex items-center justify-center tabular-num shrink-0">
+                  #4
+                </span>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-[#F1F5F9] truncate">📈 กราฟจำลองเส้นทางสู่เป้าหมาย</div>
+                  <div id="collapsedSub_chart" class="text-[11px] text-[#94A3B8] truncate mt-0.5">
+                    เปรียบเทียบเงินทุนสะสม vs มูลค่าพอร์ตรวมรายปี
+                  </div>
+                </div>
+              </button>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="moveSecondarySection('chart', -1)" title="เลื่อนขึ้น"
+                  class="w-7 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-bold text-[#94A3B8] flex items-center justify-center">▲</button>
+                <button onclick="moveSecondarySection('chart', 1)" title="เลื่อนลง"
+                  class="w-7 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-xs font-bold text-[#94A3B8] flex items-center justify-center">▼</button>
+                <button id="chevronBtn_chart" onclick="toggleSecondarySection('chart')"
+                  class="px-2.5 h-7 rounded-lg bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-[11px] font-bold text-[#3B82F6] flex items-center justify-center">
+                  เปิด ▼
+                </button>
+              </div>
+            </div>
+
+            <div id="secBody_chart" class="px-4 pb-4 pt-3 border-t border-[#1E293B] space-y-3 hidden">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[11px] text-[#94A3B8] truncate">แตะหรือเลื่อนบนกราฟเพื่อดูยอดเงินแต่ละปี</p>
+                <select id="chartRangeSelect" onchange="runSimulation()"
+                  class="bg-[#182030] border border-[#1E293B] text-xs font-semibold text-[#F1F5F9] rounded-xl px-2.5 py-1.5 focus:outline-none shrink-0">
+                  <option value="auto" selected>ถึงปีเป้าหมาย</option>
+                  <option value="6">6 ปี</option>
+                  <option value="10">10 ปี</option>
+                  <option value="15">15 ปี</option>
+                  <option value="20">20 ปี</option>
+                </select>
+              </div>
+
+              <!-- Interactive Readout Strip -->
+              <div id="chartHoverReadout" class="ios-subcard !py-2 !px-3 flex items-center justify-between text-xs tabular-num">
+                <span class="text-[#94A3B8]">จุดตัดเป้าหมาย</span>
+                <span class="text-[#10B981] font-bold">แตะกราฟเพื่อดูรายปี</span>
+              </div>
+
+              <div class="relative w-full h-[210px]">
+                <canvas id="portfolioCanvasChart" class="w-full h-full block"></canvas>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-[#94A3B8] pt-1">
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>มูลค่าพอร์ตรวม</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span>เงินทุนสะสม</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-0.5 bg-[#F59E0B]"></span>เป้าหมาย</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- =================================================================
+           TAB 2: จัดพอร์ตหุ้น (ASSET BUILDER WITH MULTI-CURRENCY & DIVIDENDS)
+           ================================================================= -->
+      <section id="tab_assets" class="space-y-4 hidden min-w-0">
+
+        <!-- Presets Bar -->
+        <div class="ios-card space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-bold text-[#F1F5F9]">แผนพอร์ตตัวอย่าง (Presets)</span>
+            <span class="text-xs text-[#94A3B8]">แตะเพื่อโหลดแผน</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="loadPreset('sweet_spot')"
+              class="p-2.5 rounded-xl bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-left">
+              <div class="text-xs font-bold text-[#10B981] truncate">สมดุล 7-8 ปี</div>
+              <div class="text-[11px] text-[#94A3B8] mt-0.5 truncate">S&P500 + ปันผล</div>
+            </button>
+            <button onclick="loadPreset('high_growth')"
+              class="p-2.5 rounded-xl bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-left">
+              <div class="text-xs font-bold text-[#3B82F6] truncate">เติบโตเร่งด่วน</div>
+              <div class="text-[11px] text-[#94A3B8] mt-0.5 truncate">QQQ + AI Tech</div>
+            </button>
+            <button onclick="loadPreset('dividend_income')"
+              class="p-2.5 rounded-xl bg-[#182030] active:bg-[#1E293B] border border-[#1E293B] text-left">
+              <div class="text-xs font-bold text-[#F59E0B] truncate">เน้นปันผลสูง</div>
+              <div class="text-[11px] text-[#94A3B8] mt-0.5 truncate">หุ้นไทย + SCHD</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Optimizer & Add Asset Header -->
+        <div class="ios-card space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-xs space-y-1">
+              <div>รวมก้อนแรก: <span id="tab2InitSum" class="font-bold text-[#3B82F6] tabular-num">100%</span></div>
+              <div>รวมรายเดือน DCA: <span id="tab2DcaSum" class="font-bold text-[#F59E0B] tabular-num">100%</span></div>
+            </div>
+            <button onclick="addNewStock()"
+              class="px-3.5 py-2.5 rounded-xl bg-[#10B981] active:bg-[#059669] text-[#0A0E14] text-xs font-bold shrink-0">
+              + เพิ่มหุ้นในพอร์ต
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-[#1E293B]">
+            <button onclick="optimizePortfolioWeights('smart_fast')"
+              class="py-2 px-2 rounded-xl bg-[#182030] border border-[#10B981]/40 text-[11px] font-bold text-[#10B981] truncate">
+              ⚡ เร็วสุด (กระจาย)
+            </button>
+            <button onclick="optimizePortfolioWeights('max_speed')"
+              class="py-2 px-2 rounded-xl bg-[#182030] border border-[#1E293B] text-[11px] font-bold text-[#F59E0B] truncate">
+              🚀 ตัวท็อป 100%
+            </button>
+            <button onclick="optimizePortfolioWeights('equal')"
+              class="py-2 px-2 rounded-xl bg-[#182030] border border-[#1E293B] text-[11px] font-semibold text-[#F1F5F9] truncate">
+              ⚖️ เกลี่ยเท่ากัน
+            </button>
+          </div>
+        </div>
+
+        <!-- Collapsible Stock Cards -->
+        <div id="assetCardsContainer" class="space-y-3">
+          <!-- Populated by JS -->
+        </div>
+
+      </section>
+
+      <!-- =================================================================
+           TAB 3: เป้าหมาย & ค่าเงิน (GOAL, DCA CASHFLOW & LIVE FX VS THB)
+           ================================================================= -->
+      <section id="tab_fxgoal" class="space-y-4 hidden min-w-0">
+
+        <!-- Goal & Cashflow Card -->
+        <div class="ios-card space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-[#F1F5F9]">ตั้งค่าเป้าหมาย & กระแสเงินสด</h2>
+            <p class="text-xs text-[#94A3B8] mt-0.5">ปรับเงินตั้งต้น เงินออมรายเดือน (DCA) และรูปแบบเป้าหมาย</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 bg-[#0A0E14] p-1 rounded-xl border border-[#1E293B]">
+            <button id="tab3NetBtn" onclick="setTargetMode('net_new')"
+              class="py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+              ส่วนเพิ่มสุทธิ (+10M ใหม่)
+            </button>
+            <button id="tab3TotalBtn" onclick="setTargetMode('total')"
+              class="py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate">
+              มูลค่าพอร์ตรวมแตะเป้า
+            </button>
+          </div>
+
+          <!-- Target Amount Input -->
+          <div class="ios-subcard space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-xs font-semibold text-[#94A3B8]">เป้าหมายที่ต้องการ (บาท)</label>
+              <div class="flex gap-1">
+                <button onclick="setQuickTarget(5000000)" class="px-2 py-0.5 rounded bg-[#0A0E14] text-xs text-[#94A3B8] tabular-num">5M</button>
+                <button onclick="setQuickTarget(10000000)" class="px-2 py-0.5 rounded bg-[#10B981]/20 text-xs text-[#10B981] font-bold tabular-num">10M</button>
+                <button onclick="setQuickTarget(20000000)" class="px-2 py-0.5 rounded bg-[#0A0E14] text-xs text-[#94A3B8] tabular-num">20M</button>
+              </div>
+            </div>
+            <div class="flex items-center bg-[#0A0E14] border border-[#1E293B] rounded-xl px-3 py-2">
+              <span class="text-base font-bold text-[#94A3B8] mr-2 tabular-num">฿</span>
+              <input id="inpTargetAmount" type="text" inputmode="numeric" value="10,000,000"
+                onfocus="stripCommas(this)" onblur="commitFormattedNumber(this, 'targetAmountTHB')"
+                class="w-full bg-transparent text-lg font-bold text-[#F1F5F9] tabular-num focus:outline-none" />
+            </div>
+            <div id="tab3TargetNote" class="text-xs text-[#10B981] font-medium tabular-num">
+              พอร์ตรวมปลายทางต้องแตะ: ฿13,000,000
+            </div>
+          </div>
+
+          <!-- Initial Lump Sum Input -->
+          <div class="ios-subcard space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-xs font-semibold text-[#94A3B8]">เงินตั้งต้นก้อนแรก (Initial Capital)</label>
+              <div class="flex gap-1">
+                <button onclick="setQuickInitial(1000000)" class="px-2 py-0.5 rounded bg-[#0A0E14] text-xs text-[#94A3B8] tabular-num">1M</button>
+                <button onclick="setQuickInitial(3000000)" class="px-2 py-0.5 rounded bg-[#3B82F6]/20 text-xs text-[#3B82F6] font-bold tabular-num">3M</button>
+                <button onclick="setQuickInitial(5000000)" class="px-2 py-0.5 rounded bg-[#0A0E14] text-xs text-[#94A3B8] tabular-num">5M</button>
+              </div>
+            </div>
+            <div class="flex items-center bg-[#0A0E14] border border-[#1E293B] rounded-xl px-3 py-2">
+              <span class="text-base font-bold text-[#94A3B8] mr-2 tabular-num">฿</span>
+              <input id="inpInitialCapital" type="text" inputmode="numeric" value="3,000,000"
+                onfocus="stripCommas(this)" onblur="commitFormattedNumber(this, 'initialCapitalTHB')"
+                class="w-full bg-transparent text-lg font-bold text-[#3B82F6] tabular-num focus:outline-none" />
+            </div>
+          </div>
+
+          <!-- Monthly DCA Input -->
+          <div class="ios-subcard space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-xs font-semibold text-[#94A3B8]">เงินเติมรายเดือน (Monthly DCA)</label>
+              <div class="flex gap-1">
+                <button onclick="setQuickDca(15000)" class="px-2 py-0.5 rounded bg-[#0A0E14] text-xs text-[#94A3B8] tabular-num">15k</button>
+                <button onclick="setQuickDca(35000)" class="px-2 py-0.5 rounded bg-[#F59E0B]/20 text-xs text-[#F59E0B] font-bold tabular-num">35k</button>
+                <button onclick="setQuickDca(50000)" class="px-2 py-0.5 rounded bg-[#0A0E14] text-xs text-[#94A3B8] tabular-num">50k</button>
+              </div>
+            </div>
+            <div class="flex items-center bg-[#0A0E14] border border-[#1E293B] rounded-xl px-3 py-2">
+              <span class="text-base font-bold text-[#94A3B8] mr-2 tabular-num">฿</span>
+              <input id="inpMonthlyDca" type="text" inputmode="numeric" value="35,000"
+                onfocus="stripCommas(this)" onblur="commitFormattedNumber(this, 'monthlyDcaTHB')"
+                class="w-full bg-transparent text-lg font-bold text-[#F59E0B] tabular-num focus:outline-none" />
+            </div>
+            <div id="tab3SalaryHint" class="text-xs text-[#3B82F6] tabular-num">
+              ฐานเงินเดือนแนะนำ (ออม 40% ของรายได้): ฿87,500/เดือน
+            </div>
+          </div>
+
+          <!-- Step-up DCA % per year -->
+          <div class="ios-subcard flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-[#F1F5F9]">ปรับเพิ่มเงิน DCA ทุกปี (Step-up %)</div>
+              <div class="text-[11px] text-[#94A3B8]">ออมเพิ่มขึ้นตามเงินเดือนที่โตขึ้น</div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <input id="inpStepUpPct" type="number" step="1" min="0" max="30" value="0"
+                oninput="onStepUpChange(this.value)"
+                class="w-20 bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 text-right font-bold text-[#10B981] tabular-num focus:outline-none" />
+              <span class="text-xs text-[#94A3B8] tabular-num">%/ปี</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Multi-Currency Exchange Rates vs THB -->
+        <div class="ios-card space-y-3.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <h2 class="text-base font-bold text-[#F1F5F9]">เรทค่าเงินโลกเทียบเงินบาท (THB)</h2>
+              <p id="fxStatusSubtitle" class="text-xs text-[#94A3B8] mt-0.5 truncate">
+                ดึงเรทปัจจุบันอัตโนมัติ หรือพิมพ์แก้เรทเองได้
+              </p>
+            </div>
+            <button onclick="fetchLiveExchangeRates(true)"
+              class="px-3 py-2 rounded-xl bg-[#3B82F6] active:bg-[#2563EB] text-[#F1F5F9] text-xs font-bold shrink-0">
+              ดึงเรทล่าสุด
+            </button>
+          </div>
+
+          <div id="fxRatesListContainer" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =================================================================
+           TAB 4: ตารางรายปี (MOBILE-FRIENDLY YEARLY MILESTONE CARDS)
+           ================================================================= -->
+      <section id="tab_table" class="space-y-4 hidden min-w-0">
+
+        <div class="ios-card space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <h2 class="text-base font-bold text-[#F1F5F9]">ตารางพัฒนาการพอร์ตรายปี</h2>
+              <p class="text-xs text-[#94A3B8] truncate">สรุปเงินทุนสะสม ปันผล และมูลค่าพอร์ตทุกสิ้นปี</p>
+            </div>
+            <span id="yearlySuccessBadge" class="px-2.5 py-1 rounded-xl bg-[#10B981]/15 text-[#10B981] text-xs font-bold tabular-num shrink-0">
+              ปีที่ 8
+            </span>
+          </div>
+
+          <div id="yearlyCardsList" class="space-y-2.5">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Fixed 4-Tab iOS Bottom Bar -->
+    <nav class="ios-bottom-bar fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 px-2 pt-2">
+      <div class="grid grid-cols-4 gap-1">
+        <button id="tabBtn_overview" onclick="switchIosTab('overview')"
+          class="flex flex-col items-center justify-center py-1.5 rounded-xl transition text-[#10B981]">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="text-[11px] font-bold mt-1 truncate">สรุป & สมดุล</span>
+        </button>
+
+        <button id="tabBtn_assets" onclick="switchIosTab('assets')"
+          class="flex flex-col items-center justify-center py-1.5 rounded-xl transition text-[#94A3B8]">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+          <span class="text-[11px] font-medium mt-1 truncate">จัดพอร์ตหุ้น</span>
+        </button>
+
+        <button id="tabBtn_fxgoal" onclick="switchIosTab('fxgoal')"
+          class="flex flex-col items-center justify-center py-1.5 rounded-xl transition text-[#94A3B8]">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3.6 9h16.8M3.6 15h16.8"/>
+            <path d="M11.5 3a17 17 0 0 0 0 18M12.5 3a17 17 0 0 1 0 18"/>
+          </svg>
+          <span class="text-[11px] font-medium mt-1 truncate">เป้าหมาย & ค่าเงิน</span>
+        </button>
+
+        <button id="tabBtn_table" onclick="switchIosTab('table')"
+          class="flex flex-col items-center justify-center py-1.5 rounded-xl transition text-[#94A3B8]">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <path d="M3 10h18M9 4v16"/>
+          </svg>
+          <span class="text-[11px] font-medium mt-1 truncate">ตารางรายปี</span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. GENERATE DYNAMIC APPLE TOUCH ICON FOR iOS HOME SCREEN PWA
+    // =========================================================================
+    (function createAppleTouchIcon() {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 180;
+        c.height = 180;
+        const ctx = c.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#0A0E14';
+        ctx.fillRect(0, 0, 180, 180);
+
+        // Emerald accent ring
+        ctx.strokeStyle = '#10B981';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(14, 14, 152, 152);
+
+        // Upward trend line
+        ctx.beginPath();
+        ctx.moveTo(38, 125);
+        ctx.lineTo(75, 92);
+        ctx.lineTo(105, 106);
+        ctx.lineTo(142, 54);
+        ctx.strokeStyle = '#10B981';
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        // "10M" Label
+        ctx.fillStyle = '#F1F5F9';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillText('10M', 38, 66);
+
+        const link = document.createElement('link');
+        link.rel = 'apple-touch-icon';
+        link.href = c.toDataURL('image/png');
+        document.head.appendChild(link);
+      } catch (e) {}
+    })();
+
+    // =========================================================================
+    // 2. CURRENCY DEFINITIONS & PALETTE
+    // =========================================================================
+    const CURRENCIES = {
+      THB: { code: 'THB', symbol: '฿', name: 'บาทไทย', fallbackTHB: 1.00 },
+      USD: { code: 'USD', symbol: '$', name: 'ดอลลาร์สหรัฐ', fallbackTHB: 34.45 },
+      EUR: { code: 'EUR', symbol: '€', name: 'ยูโรยุโรป', fallbackTHB: 37.30 },
+      JPY: { code: 'JPY', symbol: '¥', name: 'เยนญี่ปุ่น (ต่อ 1 เยน)', fallbackTHB: 0.228 },
+      GBP: { code: 'GBP', symbol: '£', name: 'ปอนด์อังกฤษ', fallbackTHB: 43.90 },
+      SGD: { code: 'SGD', symbol: 'S$', name: 'ดอลลาร์สิงคโปร์', fallbackTHB: 25.65 },
+      HKD: { code: 'HKD', symbol: 'HK$', name: 'ดอลลาร์ฮ่องกง', fallbackTHB: 4.42 },
+      CNY: { code: 'CNY', symbol: '¥', name: 'หยวนจีน', fallbackTHB: 4.76 }
+    };
+
+    const PALETTE = ['#10B981', '#3B82F6', '#F59E0B', '#A855F7', '#F43F5E', '#14B8A6', '#FB923C'];
+
+    // =========================================================================
+    // 3. APPLICATION STATE & PRESETS
+    // =========================================================================
+    let activeTab = 'overview';
+    let quickSliderMode = 'initial'; // 'initial' | 'dca'
+    let expandedAssetId = 's1';
+    let lastSolvedMonthlyDca = 35000;
+    let cachedChartPoints = [];
+
+    let state = {
+      targetMode: 'net_new', // 'net_new' (+10M on top of initial) or 'total'
+      targetAmountTHB: 10000000,
+      initialCapitalTHB: 3000000,
+      monthlyDcaTHB: 35000,
+      stepUpDcaPct: 0,
+      reverseTargetYears: 6,
+      autoRebalance: false,
+      sectionOrder: ['rebalance', 'reverse', 'chart'],
+      sectionOpen: {
+        rebalance: false,
+        reverse: false,
+        chart: false
+      },
+      fxUpdatedLabel: 'ค่าเริ่มต้นมาตรฐาน',
+      fxRates: {
+        THB: 1.00,
+        USD: 34.45,
+        EUR: 37.30,
+        JPY: 0.228,
+        GBP: 43.90,
+        SGD: 25.65,
+        HKD: 4.42,
+        CNY: 4.76
+      },
+      assets: []
+    };
+
+    // =========================================================================
+    // 3.1 REORDERABLE & COLLAPSIBLE SECONDARY MODULES (TAB 1)
+    // =========================================================================
+    function applySecondaryModulesLayout() {
+      const stack = document.getElementById('secondaryModulesStack');
+      if (!stack) return;
+
+      const validKeys = ['rebalance', 'reverse', 'chart'];
+      if (!Array.isArray(state.sectionOrder) || state.sectionOrder.length !== 3) {
+        state.sectionOrder = ['rebalance', 'reverse', 'chart'];
+      }
+      if (!state.sectionOpen || typeof state.sectionOpen !== 'object') {
+        state.sectionOpen = { rebalance: false, reverse: false, chart: false };
+      }
+
+      // Re-append DOM cards in user's chosen order
+      state.sectionOrder.forEach((key, idx) => {
+        if (!validKeys.includes(key)) return;
+        const card = document.getElementById(`secCard_${key}`);
+        const body = document.getElementById(`secBody_${key}`);
+        const badge = document.getElementById(`orderBadge_${key}`);
+        const chev = document.getElementById(`chevronBtn_${key}`);
+        const pinBtn = document.getElementById(`pin2Btn_${key}`);
+
+        if (card) stack.appendChild(card);
+
+        // Position number (#2, #3, #4 because Hero card is #1)
+        const posNum = idx + 2;
+        if (badge) {
+          badge.textContent = `#${posNum}`;
+          if (idx === 0) {
+            badge.className = 'w-6 h-6 rounded-lg bg-[#10B981]/20 border border-[#10B981]/50 text-[#10B981] text-xs font-extrabold flex items-center justify-center tabular-num shrink-0';
+          } else {
+            badge.className = 'w-6 h-6 rounded-lg bg-[#182030] border border-[#1E293B] text-[#94A3B8] text-xs font-bold flex items-center justify-center tabular-num shrink-0';
+          }
+        }
+
+        // Pin #2 Quick Selector highlight
+        if (pinBtn) {
+          if (idx === 0) {
+            pinBtn.className = 'py-2 px-1.5 rounded-xl text-[11px] font-bold border transition text-center truncate bg-[#10B981]/20 border-[#10B981] text-[#10B981]';
+          } else {
+            pinBtn.className = 'py-2 px-1.5 rounded-xl text-[11px] font-semibold border transition text-center truncate bg-[#0A0E14] border-[#1E293B] text-[#94A3B8]';
+          }
+        }
+
+        // Collapse / Expand state
+        const isOpen = Boolean(state.sectionOpen[key]);
+        if (body && chev) {
+          if (isOpen) {
+            body.classList.remove('hidden');
+            chev.textContent = 'ย่อ ▲';
+            chev.className = 'px-2.5 h-7 rounded-lg bg-[#10B981]/15 border border-[#10B981]/40 text-[11px] font-bold text-[#10B981] flex items-center justify-center';
+          } else {
+            body.classList.add('hidden');
+            chev.textContent = 'เปิด ▼';
+            chev.className = 'px-2.5 h-7 rounded-lg bg-[#182030] border border-[#1E293B] text-[11px] font-bold text-[#3B82F6] flex items-center justify-center';
+          }
+        }
+      });
+
+      // Redraw chart if chart section was just opened
+      if (state.sectionOpen.chart) {
+        setTimeout(() => runSimulation(true), 20);
+      }
+      saveStateToStorage();
+    }
+
+    function toggleSecondarySection(key) {
+      state.sectionOpen[key] = !state.sectionOpen[key];
+      applySecondaryModulesLayout();
+    }
+
+    function promoteSectionToSecond(key) {
+      const rest = state.sectionOrder.filter(k => k !== key);
+      state.sectionOrder = [key, ...rest];
+      // Open the promoted #2 section and collapse the others to keep screen clean
+      state.sectionOpen = {
+        rebalance: key === 'rebalance',
+        reverse: key === 'reverse',
+        chart: key === 'chart'
+      };
+      applySecondaryModulesLayout();
+      const titles = {
+        rebalance: 'ปรับสมดุลพอร์ต',
+        reverse: 'คำนวณปีเป้าหมาย',
+        chart: 'กราฟจำลองพอร์ต'
+      };
+      showToast(`📌 ตั้ง "${titles[key]}" ขึ้นมาเป็นลำดับที่ 2 แล้ว`);
+    }
+
+    function moveSecondarySection(key, delta) {
+      const idx = state.sectionOrder.indexOf(key);
+      if (idx === -1) return;
+      const targetIdx = idx + delta;
+      if (targetIdx < 0 || targetIdx >= state.sectionOrder.length) return;
+      const arr = [...state.sectionOrder];
+      const temp = arr[idx];
+      arr[idx] = arr[targetIdx];
+      arr[targetIdx] = temp;
+      state.sectionOrder = arr;
+      applySecondaryModulesLayout();
+    }
+
+    function collapseAllSecondaryModules() {
+      state.sectionOpen = { rebalance: false, reverse: false, chart: false };
+      applySecondaryModulesLayout();
+      showToast('ย่อหน้าต่างด้านล่างทั้งหมดแล้ว เพื่อเน้นการ์ดสรุปหลัก');
+    }
+
+    const PRESETS = {
+      sweet_spot: {
+        targetMode: 'net_new',
+        targetAmountTHB: 10000000,
+        initialCapitalTHB: 3000000,
+        monthlyDcaTHB: 35000,
+        stepUpDcaPct: 0,
+        autoRebalance: false,
+        assets: [
+          {
+            id: 's1',
+            name: 'S&P 500 ETF (VOO)',
+            currency: 'USD',
+            initialWeight: 45,
+            dcaWeight: 45,
+            capGainPct: 9.5,
+            divMode: 'yield',
+            divYieldPct: 1.4,
+            sharePrice: 520,
+            dps: 7.28,
+            taxPct: 15,
+            drip: true
+          },
+          {
+            id: 's2',
+            name: 'US Tech Growth (QQQ / NVDA)',
+            currency: 'USD',
+            initialWeight: 25,
+            dcaWeight: 35,
+            capGainPct: 14.5,
+            divMode: 'none',
+            divYieldPct: 0,
+            sharePrice: 490,
+            dps: 0,
+            taxPct: 15,
+            drip: true
+          },
+          {
+            id: 's3',
+            name: 'หุ้นปันผลไทย (SCB / TISCO)',
+            currency: 'THB',
+            initialWeight: 30,
+            dcaWeight: 20,
+            capGainPct: 2.0,
+            divMode: 'price_dps',
+            divYieldPct: 7.73,
+            sharePrice: 110,
+            dps: 8.50,
+            taxPct: 10,
+            drip: true
+          }
+        ]
+      },
+      high_growth: {
+        targetMode: 'net_new',
+        targetAmountTHB: 10000000,
+        initialCapitalTHB: 3000000,
+        monthlyDcaTHB: 45000,
+        stepUpDcaPct: 5,
+        autoRebalance: false,
+        assets: [
+          {
+            id: 'g1',
+            name: 'NASDAQ-100 ETF (QQQ)',
+            currency: 'USD',
+            initialWeight: 50,
+            dcaWeight: 50,
+            capGainPct: 12.5,
+            divMode: 'yield',
+            divYieldPct: 0.6,
+            sharePrice: 495,
+            dps: 2.97,
+            taxPct: 15,
+            drip: true
+          },
+          {
+            id: 'g2',
+            name: 'AI & Semiconductor Leaders',
+            currency: 'USD',
+            initialWeight: 35,
+            dcaWeight: 35,
+            capGainPct: 16.0,
+            divMode: 'none',
+            divYieldPct: 0,
+            sharePrice: 140,
+            dps: 0,
+            taxPct: 15,
+            drip: true
+          },
+          {
+            id: 'g3',
+            name: 'Japan Trading Houses (8001)',
+            currency: 'JPY',
+            initialWeight: 15,
+            dcaWeight: 15,
+            capGainPct: 8.5,
+            divMode: 'price_dps',
+            divYieldPct: 2.67,
+            sharePrice: 7500,
+            dps: 200,
+            taxPct: 15,
+            drip: true
+          }
+        ]
+      },
+      dividend_income: {
+        targetMode: 'net_new',
+        targetAmountTHB: 10000000,
+        initialCapitalTHB: 3000000,
+        monthlyDcaTHB: 40000,
+        stepUpDcaPct: 0,
+        autoRebalance: true,
+        assets: [
+          {
+            id: 'd1',
+            name: 'หุ้นแบงก์ไทยปันผลสูง (SCB / TISCO)',
+            currency: 'THB',
+            initialWeight: 45,
+            dcaWeight: 40,
+            capGainPct: 2.5,
+            divMode: 'price_dps',
+            divYieldPct: 7.73,
+            sharePrice: 110,
+            dps: 8.50,
+            taxPct: 10,
+            drip: true
+          },
+          {
+            id: 'd2',
+            name: 'US Dividend ETF (SCHD)',
+            currency: 'USD',
+            initialWeight: 35,
+            dcaWeight: 40,
+            capGainPct: 6.5,
+            divMode: 'yield',
+            divYieldPct: 3.6,
+            sharePrice: 84,
+            dps: 3.02,
+            taxPct: 15,
+            drip: true
+          },
+          {
+            id: 'd3',
+            name: 'Singapore REITs & DBS Bank',
+            currency: 'SGD',
+            initialWeight: 20,
+            dcaWeight: 20,
+            capGainPct: 4.5,
+            divMode: 'price_dps',
+            divYieldPct: 5.5,
+            sharePrice: 40,
+            dps: 2.20,
+            taxPct: 0,
+            drip: true
+          }
+        ]
+      }
+    };
+
+    // =========================================================================
+    // 4. FORMATTING & ASSET EFFECTIVE RETURN HELPERS
+    // =========================================================================
+    function fmtNum(val, dec = 0) {
+      const n = Number(val) || 0;
+      return n.toLocaleString('en-US', {
+        minimumFractionDigits: dec,
+        maximumFractionDigits: dec
+      });
+    }
+
+    function fmtTHB(val, dec = 0) {
+      return '฿' + fmtNum(val, dec);
+    }
+
+    function fmtCompactTHB(val) {
+      const n = Number(val) || 0;
+      if (Math.abs(n) >= 1000000) return '฿' + (n / 1000000).toFixed(2) + 'M';
+      if (Math.abs(n) >= 1000) return '฿' + (n / 1000).toFixed(0) + 'k';
+      return '฿' + Math.round(n);
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('iosToast');
+      document.getElementById('iosToastMsg').textContent = message;
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(window._iosToastTimer);
+      window._iosToastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 2600);
+    }
+
+    function toggleInfoModal(show) {
+      const modal = document.getElementById('infoModal');
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function getAssetGrossYieldPct(asset) {
+      if (asset.divMode === 'none') return 0;
+      if (asset.divMode === 'yield') return Math.max(0, Number(asset.divYieldPct) || 0);
+      if (asset.divMode === 'price_dps') {
+        const p = Number(asset.sharePrice) || 0;
+        const d = Number(asset.dps) || 0;
+        return p > 0 ? (d / p) * 100 : 0;
+      }
+      return 0;
+    }
+
+    function getAssetNetAnnualReturnPct(asset) {
+      const cap = Number(asset.capGainPct) || 0;
+      const grossYield = getAssetGrossYieldPct(asset);
+      const taxRate = Math.min(1, Math.max(0, (Number(asset.taxPct) || 0) / 100));
+      const netYield = grossYield * (1 - taxRate);
+      return cap + (asset.drip ? netYield : netYield * 0.75);
+    }
+
+    // =========================================================================
+    // 5. AUTO-OPTIMIZE FASTEST ALLOCATION ENGINE
+    // =========================================================================
+    function optimizePortfolioWeights(mode = 'smart_fast') {
+      const n = state.assets.length;
+      if (n === 0) return;
+
+      const beforeSim = simulatePortfolio(state.autoRebalance);
+      const beforeMonths = beforeSim.goalMonth || 600;
+
+      if (mode === 'equal') {
+        const w = Math.floor(100 / n);
+        state.assets.forEach((a, i) => {
+          a.initialWeight = i === 0 ? 100 - w * (n - 1) : w;
+          a.dcaWeight = a.initialWeight;
+        });
+        renderOverviewSliders();
+        renderAssetBuilderCards();
+        runSimulation();
+        showToast('⚖️ เกลี่ยสัดส่วนหุ้นทุกตัวเท่ากันเรียบร้อยแล้ว');
+        return;
+      }
+
+      // Rank assets by effective annual net return descending
+      const ranked = state.assets
+        .map((a, idx) => ({ idx, id: a.id, name: a.name, netReturn: getAssetNetAnnualReturnPct(a) }))
+        .sort((a, b) => b.netReturn - a.netReturn);
+
+      const newWeights = new Array(n).fill(0);
+
+      if (mode === 'max_speed') {
+        // 100% into the single highest-returning stock to achieve theoretical fastest time
+        newWeights[ranked[0].idx] = 100;
+        state.autoRebalance = false;
+        syncRebalanceButtons();
+      } else {
+        // 'smart_fast': Capped at 50% max per stock (when n >= 3), minimum 10% floor for diversification
+        if (n === 1) {
+          newWeights[0] = 100;
+        } else if (n === 2) {
+          newWeights[ranked[0].idx] = 70;
+          newWeights[ranked[1].idx] = 30;
+        } else {
+          const minFloor = n >= 5 ? 5 : 10;
+          const maxCap = 50;
+          const scores = ranked.map((r, pos) => Math.pow(Math.max(0.5, r.netReturn), 2) * Math.pow(1.6, n - pos));
+          const totalScore = scores.reduce((s, v) => s + v, 0);
+          const pool = 100 - minFloor * n;
+
+          let rawW = ranked.map((_, i) => minFloor + pool * (scores[i] / totalScore));
+
+          // Cap at 50% and waterfall excess to next highest returning asset
+          for (let pass = 0; pass < 4; pass++) {
+            let excess = 0;
+            let openIndices = [];
+            for (let i = 0; i < n; i++) {
+              if (rawW[i] > maxCap) {
+                excess += rawW[i] - maxCap;
+                rawW[i] = maxCap;
+              } else {
+                openIndices.push(i);
+              }
+            }
+            if (excess <= 0.05 || openIndices.length === 0) break;
+            rawW[openIndices[0]] += excess;
+          }
+
+          let sumRounded = 0;
+          for (let i = 0; i < n; i++) {
+            const w = Math.round(rawW[i]);
+            newWeights[ranked[i].idx] = w;
+            sumRounded += w;
+          }
+          newWeights[ranked[0].idx] += (100 - sumRounded);
+        }
+        state.autoRebalance = false;
+        syncRebalanceButtons();
+      }
+
+      state.assets.forEach((a, idx) => {
+        a.initialWeight = newWeights[idx];
+        a.dcaWeight = newWeights[idx];
+      });
+
+      renderOverviewSliders();
+      renderAssetBuilderCards();
+      runSimulation();
+
+      const afterSim = simulatePortfolio(state.autoRebalance);
+      const afterMonths = afterSim.goalMonth || 600;
+      const saved = beforeMonths - afterMonths;
+
+      if (saved > 0) {
+        const y = Math.floor(saved / 12);
+        const m = saved % 12;
+        const txt = y > 0 ? `${y} ปี ${m} เดือน` : `${m} เดือน`;
+        showToast(`⚡ จัดสัดส่วนเร็วสุดสำเร็จ! ย่นเวลาเร็วขึ้น ${txt}`);
+      } else {
+        showToast(`⚡ เน้นน้ำหนักไปที่ ${ranked[0].name} (+${ranked[0].netReturn.toFixed(1)}%/ปี) เรียบร้อยแล้ว`);
+      }
+    }
+
+    // =========================================================================
+    // 6. TARGET YEAR REVERSE CALCULATOR (BINARY SEARCH FOR CAGR & DCA)
+    // =========================================================================
+    function stepReverseYear(delta) {
+      const next = Math.min(25, Math.max(1, (state.reverseTargetYears || 6) + delta));
+      state.reverseTargetYears = next;
+      document.getElementById('revYearSlider').value = next;
+      updateReverseCalculatorUI();
+    }
+
+    function onReverseYearSlide(val) {
+      state.reverseTargetYears = parseInt(val, 10) || 6;
+      updateReverseCalculatorUI();
+    }
+
+    function computeFutureValue(annualCagrPct, months, initCap, baseDca, stepUpPct) {
+      const mRate = Math.pow(1 + annualCagrPct / 100, 1 / 12) - 1;
+      const step = (stepUpPct || 0) / 100;
+      let bal = initCap;
+      for (let m = 1; m <= months; m++) {
+        const yr = Math.floor((m - 1) / 12);
+        const dca = baseDca * Math.pow(1 + step, yr);
+        bal = bal * (1 + mRate) + dca;
+      }
+      return bal;
+    }
+
+    function updateReverseCalculatorUI(currentPortfolioCagr = 9.85) {
+      const targetYrs = state.reverseTargetYears || 6;
+      const months = targetYrs * 12;
+      const initCap = state.initialCapitalTHB;
+      const baseDca = state.monthlyDcaTHB;
+      const step = state.stepUpDcaPct || 0;
+
+      const requiredTotalTHB = state.targetMode === 'net_new'
+        ? initCap + state.targetAmountTHB
+        : state.targetAmountTHB;
+
+      document.getElementById('revYearTitleNum').textContent = targetYrs;
+      document.getElementById('revYearPill').textContent = `${targetYrs} ปี`;
+
+      // 1. Binary Search for Required CAGR (% per year)
+      let lowR = 0;
+      let highR = 150;
+      for (let i = 0; i < 42; i++) {
+        const midR = (lowR + highR) / 2;
+        const fv = computeFutureValue(midR, months, initCap, baseDca, step);
+        if (fv >= requiredTotalTHB) highR = midR;
+        else lowR = midR;
+      }
+      const reqCagr = highR;
+
+      // 2. Binary Search for Required Monthly DCA at currentPortfolioCagr
+      let lowD = 0;
+      let highD = 3000000;
+      for (let i = 0; i < 42; i++) {
+        const midD = (lowD + highD) / 2;
+        const fv = computeFutureValue(currentPortfolioCagr, months, initCap, midD, step);
+        if (fv >= requiredTotalTHB) highD = midD;
+        else lowD = midD;
+      }
+      const reqDca = Math.ceil(highD / 500) * 500;
+      lastSolvedMonthlyDca = reqDca;
+
+      const cagrEl = document.getElementById('revRequiredCagr');
+      const cagrSub = document.getElementById('revCagrStatusText');
+      const dcaEl = document.getElementById('revRequiredDca');
+      const dcaSub = document.getElementById('revDcaStatusText');
+      const summaryEl = document.getElementById('revSummaryNote');
+      const collapsedRevSub = document.getElementById('collapsedSub_reverse');
+
+      cagrEl.textContent = `${reqCagr.toFixed(2)}%/ปี`;
+      if (collapsedRevSub) {
+        collapsedRevSub.textContent = `เป้า ${targetYrs} ปี: ต้องทำกำไร ${reqCagr.toFixed(1)}%/ปี หรือ DCA ${fmtCompactTHB(reqDca)}/ด.`;
+      }
+      const cagrGap = reqCagr - currentPortfolioCagr;
+
+      if (cagrGap <= 0) {
+        cagrEl.className = 'text-lg font-extrabold text-[#10B981] tabular-num mt-1';
+        cagrSub.innerHTML = `<span class="text-[#10B981]">พอร์ตปัจจุบัน (${currentPortfolioCagr.toFixed(1)}%) ถึงเป้าทัน!</span>`;
+      } else {
+        cagrEl.className = 'text-lg font-extrabold text-[#F59E0B] tabular-num mt-1';
+        cagrSub.innerHTML = `พอร์ตตอนนี้ ${currentPortfolioCagr.toFixed(1)}% <span class="text-[#F43F5E]">(ขาด +${cagrGap.toFixed(1)}%)</span>`;
+      }
+
+      dcaEl.textContent = `DCA ${fmtTHB(reqDca)}/ด.`;
+      const dcaGap = reqDca - baseDca;
+      if (dcaGap <= 0) {
+        dcaSub.innerHTML = `<span class="text-[#10B981]">DCA ปัจจุบัน (${fmtCompactTHB(baseDca)}/ด.) พอแล้ว</span>`;
+      } else {
+        dcaSub.innerHTML = `ต้องเติมเพิ่ม <span class="text-[#3B82F6]">+${fmtTHB(dcaGap)}/ด.</span>`;
+      }
+
+      summaryEl.innerHTML = `สรุปเป้าหมาย <b>${targetYrs} ปี</b> (พอร์ตแตะ <b>${fmtTHB(requiredTotalTHB)}</b>): จากทุนต้น <b>${fmtCompactTHB(initCap)}</b> และ DCA <b>${fmtTHB(baseDca)}/ด.</b> ต้องทำกำไรเฉลี่ย <b>${reqCagr.toFixed(2)}%/ปี</b>`;
+    }
+
+    function applySolvedDcaForTargetYear() {
+      state.monthlyDcaTHB = Math.max(0, lastSolvedMonthlyDca);
+      syncGoalInputsUI();
+      renderOverviewSliders();
+      renderAssetBuilderCards();
+      runSimulation();
+      showToast(`ปรับเงิน DCA เป็น ${fmtTHB(state.monthlyDcaTHB)}/เดือน เพื่อให้ถึงเป้าใน ${state.reverseTargetYears} ปีแล้ว`);
+    }
+
+    // =========================================================================
+    // 7. LIVE EXCHANGE RATES FETCHER VS THB
+    // =========================================================================
+    async function fetchLiveExchangeRates(notify = false) {
+      const spin = document.getElementById('hdrFxSpinner');
+      if (spin) spin.classList.add('animate-spin');
+
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/THB');
+        if (!res.ok) throw new Error('FX Fetch Error');
+        const data = await res.json();
+
+        if (data && data.rates) {
+          Object.keys(CURRENCIES).forEach(code => {
+            if (code === 'THB') {
+              state.fxRates.THB = 1.00;
+            } else if (data.rates[code] && data.rates[code] > 0) {
+              const thbPerUnit = 1 / data.rates[code];
+              state.fxRates[code] = code === 'JPY'
+                ? Number(thbPerUnit.toFixed(4))
+                : Number(thbPerUnit.toFixed(2));
+            }
+          });
+
+          const now = new Date();
+          state.fxUpdatedLabel = `เรทล่าสุด ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
+          document.getElementById('hdrUsdRate').textContent = `1 USD = ฿${state.fxRates.USD.toFixed(2)}`;
+
+          renderFxRatesList();
+          renderAssetBuilderCards();
+          runSimulation();
+          saveStateToStorage();
+
+          if (notify) {
+            showToast(`ดึงเรทค่าเงินปัจจุบันสำเร็จ (1 USD = ฿${state.fxRates.USD.toFixed(2)})`);
+          }
+        }
+      } catch (err) {
+        if (notify) {
+          showToast('ใช้เรทค่าเงินที่บันทึกไว้ (สามารถพิมพ์แก้ไขเรทเองได้)');
+        }
+      } finally {
+        if (spin) spin.classList.remove('animate-spin');
+      }
+    }
+
+    function renderFxRatesList() {
+      const container = document.getElementById('fxRatesListContainer');
+      const sub = document.getElementById('fxStatusSubtitle');
+      if (sub) sub.textContent = state.fxUpdatedLabel;
+
+      const codes = Object.keys(CURRENCIES).filter(c => c !== 'THB');
+      container.innerHTML = codes.map(code => {
+        const info = CURRENCIES[code];
+        const rate = state.fxRates[code] || info.fallbackTHB;
+        const step = code === 'JPY' ? '0.001' : '0.05';
+        const note = code === 'JPY' ? `100 JPY ≈ ฿${(rate * 100).toFixed(2)}` : info.name;
+
+        return `
+          <div class="ios-subcard flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-[#F1F5F9] tabular-num">1 ${code} (${info.symbol})</div>
+              <div class="text-xs text-[#94A3B8] truncate">${note}</div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="text-xs text-[#94A3B8] tabular-num">= ฿</span>
+              <input type="number" step="${step}" min="0.0001" value="${rate}"
+                oninput="onManualFxInput('${code}', this.value)"
+                class="w-24 bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 text-right font-bold text-[#3B82F6] tabular-num focus:outline-none" />
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function onManualFxInput(code, val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num > 0) {
+        state.fxRates[code] = num;
+        if (code === 'USD') {
+          document.getElementById('hdrUsdRate').textContent = `1 USD = ฿${num.toFixed(2)}`;
+        }
+        renderAssetBuilderCards();
+        runSimulation();
+      }
+    }
+
+    // =========================================================================
+    // 8. TAB NAVIGATION & SLIDER CONTROLS
+    // =========================================================================
+    function switchIosTab(tabKey) {
+      activeTab = tabKey;
+      ['overview', 'assets', 'fxgoal', 'table'].forEach(k => {
+        const sec = document.getElementById(`tab_${k}`);
+        const btn = document.getElementById(`tabBtn_${k}`);
+        if (k === tabKey) {
+          sec.classList.remove('hidden');
+          btn.className = 'flex flex-col items-center justify-center py-1.5 rounded-xl transition text-[#10B981]';
+        } else {
+          sec.classList.add('hidden');
+          btn.className = 'flex flex-col items-center justify-center py-1.5 rounded-xl transition text-[#94A3B8]';
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (tabKey === 'overview') {
+        runSimulation();
+      }
+    }
+
+    function setAutoRebalance(flag) {
+      state.autoRebalance = Boolean(flag);
+      syncRebalanceButtons();
+      runSimulation();
+    }
+
+    function syncRebalanceButtons() {
+      const btnNat = document.getElementById('btnRebalNatural');
+      const btnAnn = document.getElementById('btnRebalAnnual');
+      if (state.autoRebalance) {
+        btnAnn.className = 'py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#10B981] text-[#0A0E14]';
+        btnNat.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+      } else {
+        btnNat.className = 'py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#3B82F6] text-[#F1F5F9]';
+        btnAnn.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+      }
+    }
+
+    function setQuickSliderMode(mode) {
+      quickSliderMode = mode;
+      const bInit = document.getElementById('btnSlideInitial');
+      const bDca = document.getElementById('btnSlideDca');
+      const sub = document.getElementById('sliderModeSubtitle');
+
+      if (mode === 'initial') {
+        bInit.className = 'py-1.5 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#3B82F6] text-[#F1F5F9]';
+        bDca.className = 'py-1.5 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+        sub.textContent = 'เลื่อนปรับสัดส่วนเงินก้อนแรก:';
+      } else {
+        bDca.className = 'py-1.5 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#F59E0B] text-[#0A0E14]';
+        bInit.className = 'py-1.5 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+        sub.textContent = 'เลื่อนปรับสัดส่วนเงินเติมรายเดือน (DCA):';
+      }
+      renderOverviewSliders();
+    }
+
+    function renderOverviewSliders() {
+      const container = document.getElementById('overviewSlidersList');
+      const key = quickSliderMode === 'initial' ? 'initialWeight' : 'dcaWeight';
+      const totalW = state.assets.reduce((s, a) => s + (Number(a[key]) || 0), 0);
+
+      document.getElementById('bannerDcaAmt').textContent = fmtTHB(state.monthlyDcaTHB);
+      const badge = document.getElementById('sliderTotalSumBadge');
+      badge.textContent = `รวม ${totalW.toFixed(0)}%`;
+      badge.className = Math.abs(totalW - 100) < 0.5
+        ? 'font-bold text-[#10B981] tabular-num'
+        : 'font-bold text-[#F43F5E] tabular-num';
+
+      container.innerHTML = state.assets.map((asset, i) => {
+        const color = PALETTE[i % PALETTE.length];
+        const w = Number(asset[key]) || 0;
+        const netRet = getAssetNetAnnualReturnPct(asset);
+        const thbVal = quickSliderMode === 'initial'
+          ? (state.initialCapitalTHB * w) / 100
+          : (state.monthlyDcaTHB * w) / 100;
+        const unit = quickSliderMode === 'initial' ? '' : '/ด.';
+        const sliderClass = quickSliderMode === 'initial' ? 'ios-slider blue-thumb' : 'ios-slider amber-thumb';
+
+        return `
+          <div class="ios-subcard space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color:${color}"></span>
+                <span class="text-xs font-bold text-[#F1F5F9] truncate">${asset.name}</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-[#10B981]/15 text-[#10B981] text-[11px] font-bold tabular-num shrink-0">
+                +${netRet.toFixed(1)}%/ปี
+              </span>
+            </div>
+
+            <input type="range" min="0" max="100" step="1" value="${w}"
+              oninput="onOverviewSliderChange('${asset.id}', this.value)"
+              class="${sliderClass}" />
+
+            <div class="flex items-center justify-between text-xs tabular-num">
+              <span class="text-[#94A3B8]">สกุลเงิน ${asset.currency}</span>
+              <div>
+                <span id="ovSlidePct_${asset.id}" class="font-bold text-[#F1F5F9]">${w.toFixed(0)}%</span>
+                <span id="ovSlideAmt_${asset.id}" class="text-[#3B82F6] ml-1">(${fmtTHB(thbVal)}${unit})</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function onOverviewSliderChange(assetId, val) {
+      const asset = state.assets.find(a => a.id === assetId);
+      if (!asset) return;
+      const key = quickSliderMode === 'initial' ? 'initialWeight' : 'dcaWeight';
+      asset[key] = parseFloat(val) || 0;
+
+      const thbVal = quickSliderMode === 'initial'
+        ? (state.initialCapitalTHB * asset[key]) / 100
+        : (state.monthlyDcaTHB * asset[key]) / 100;
+      const unit = quickSliderMode === 'initial' ? '' : '/ด.';
+
+      const pEl = document.getElementById(`ovSlidePct_${assetId}`);
+      const aEl = document.getElementById(`ovSlideAmt_${assetId}`);
+      if (pEl) pEl.textContent = `${asset[key].toFixed(0)}%`;
+      if (aEl) aEl.textContent = `(${fmtTHB(thbVal)}${unit})`;
+
+      const totalW = state.assets.reduce((s, a) => s + (Number(a[key]) || 0), 0);
+      const badge = document.getElementById('sliderTotalSumBadge');
+      if (badge) {
+        badge.textContent = `รวม ${totalW.toFixed(0)}%`;
+        badge.className = Math.abs(totalW - 100) < 0.5
+          ? 'font-bold text-[#10B981] tabular-num'
+          : 'font-bold text-[#F43F5E] tabular-num';
+      }
+
+      renderAssetBuilderCards();
+      runSimulation(true);
+    }
+
+    function normalizePortfolioWeights() {
+      const n = state.assets.length;
+      if (n === 0) return;
+
+      const sInit = state.assets.reduce((s, a) => s + (Number(a.initialWeight) || 0), 0);
+      const sDca = state.assets.reduce((s, a) => s + (Number(a.dcaWeight) || 0), 0);
+
+      state.assets.forEach(a => {
+        a.initialWeight = sInit > 0 ? Math.round((a.initialWeight / sInit) * 100) : Math.round(100 / n);
+        a.dcaWeight = sDca > 0 ? Math.round((a.dcaWeight / sDca) * 100) : Math.round(100 / n);
+      });
+
+      state.assets[0].initialWeight += (100 - state.assets.reduce((s, a) => s + a.initialWeight, 0));
+      state.assets[0].dcaWeight += (100 - state.assets.reduce((s, a) => s + a.dcaWeight, 0));
+
+      renderOverviewSliders();
+      renderAssetBuilderCards();
+      runSimulation();
+      showToast('ปรับสัดส่วนให้รวมครบ 100% เรียบร้อยแล้ว');
+    }
+
+    // =========================================================================
+    // 9. TAB 2: COLLAPSIBLE ASSET BUILDER CARDS
+    // =========================================================================
+    function toggleAssetCard(id) {
+      expandedAssetId = expandedAssetId === id ? null : id;
+      renderAssetBuilderCards();
+    }
+
+    function renderAssetBuilderCards() {
+      const container = document.getElementById('assetCardsContainer');
+      if (!container) return;
+
+      const sInit = state.assets.reduce((s, a) => s + (Number(a.initialWeight) || 0), 0);
+      const sDca = state.assets.reduce((s, a) => s + (Number(a.dcaWeight) || 0), 0);
+
+      document.getElementById('tab2InitSum').textContent = `${sInit.toFixed(0)}%`;
+      document.getElementById('tab2DcaSum').textContent = `${sDca.toFixed(0)}%`;
+
+      container.innerHTML = state.assets.map((asset, idx) => {
+        const color = PALETTE[idx % PALETTE.length];
+        const isOpen = expandedAssetId === asset.id;
+        const curr = CURRENCIES[asset.currency] || CURRENCIES.THB;
+        const fx = state.fxRates[asset.currency] || 1;
+        const grossYield = getAssetGrossYieldPct(asset);
+        const netRet = getAssetNetAnnualReturnPct(asset);
+
+        const initTHB = (state.initialCapitalTHB * (Number(asset.initialWeight) || 0)) / 100;
+        const dcaTHB = (state.monthlyDcaTHB * (Number(asset.dcaWeight) || 0)) / 100;
+        const foreignAmt = initTHB / fx;
+
+        const currOptions = Object.keys(CURRENCIES).map(c =>
+          `<option value="${c}" ${c === asset.currency ? 'selected' : ''}>${c} (${CURRENCIES[c].symbol})</option>`
+        ).join('');
+
+        return `
+          <div class="ios-card !p-0 overflow-hidden">
+            <div onclick="toggleAssetCard('${asset.id}')"
+              class="p-4 flex items-center justify-between gap-2 cursor-pointer active:bg-[#182030]">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-3.5 h-3.5 rounded-full shrink-0" style="background-color:${color}"></span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-sm font-bold text-[#F1F5F9] truncate">${asset.name}</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#182030] text-[#3B82F6] tabular-num shrink-0">${asset.currency}</span>
+                  </div>
+                  <div class="text-xs text-[#94A3B8] tabular-num mt-1 truncate">
+                    ต้น <span class="text-[#3B82F6] font-bold">${asset.initialWeight}%</span> •
+                    DCA <span class="text-[#F59E0B] font-bold">${asset.dcaWeight}%</span> •
+                    สุทธิ <span class="text-[#10B981] font-bold">+${netRet.toFixed(1)}%/ปี</span>
+                  </div>
+                </div>
+              </div>
+              <span class="text-xs font-bold text-[#3B82F6] shrink-0">${isOpen ? 'พับ ▲' : 'แก้ ▼'}</span>
+            </div>
+
+            ${isOpen ? `
+              <div class="px-4 pb-4 pt-3 border-t border-[#1E293B] space-y-3.5 bg-[#0A0E14]/60">
+                <div class="space-y-2">
+                  <div>
+                    <label class="text-xs text-[#94A3B8] block mb-1">ชื่อหุ้น / กองทุน</label>
+                    <input type="text" value="${asset.name}"
+                      oninput="updateAssetField('${asset.id}', 'name', this.value, false)"
+                      class="w-full bg-[#182030] border border-[#1E293B] rounded-xl px-3 py-2 font-bold text-[#F1F5F9] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label class="text-xs text-[#94A3B8] block mb-1">สกุลเงินของสินทรัพย์</label>
+                    <select onchange="updateAssetField('${asset.id}', 'currency', this.value, true)"
+                      class="w-full bg-[#182030] border border-[#1E293B] rounded-xl px-3 py-2 font-bold text-[#3B82F6] focus:outline-none">
+                      ${currOptions}
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div class="ios-subcard space-y-1">
+                    <label class="text-[11px] text-[#94A3B8] block">สัดส่วนก้อนแรก (%)</label>
+                    <input type="number" step="1" min="0" max="100" value="${asset.initialWeight}"
+                      oninput="updateAssetField('${asset.id}', 'initialWeight', this.value, false)"
+                      class="w-full bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 font-bold text-[#3B82F6] tabular-num" />
+                    <div class="text-[11px] text-[#94A3B8] tabular-num truncate">=${fmtCompactTHB(initTHB)}</div>
+                  </div>
+                  <div class="ios-subcard space-y-1">
+                    <label class="text-[11px] text-[#94A3B8] block">สัดส่วน DCA (%)</label>
+                    <input type="number" step="1" min="0" max="100" value="${asset.dcaWeight}"
+                      oninput="updateAssetField('${asset.id}', 'dcaWeight', this.value, false)"
+                      class="w-full bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 font-bold text-[#F59E0B] tabular-num" />
+                    <div class="text-[11px] text-[#94A3B8] tabular-num truncate">=${fmtCompactTHB(dcaTHB)}/ด.</div>
+                  </div>
+                </div>
+
+                <div class="ios-subcard flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-xs font-bold text-[#F1F5F9]">การเติบโตของราคาต่อปี</div>
+                    <div class="text-[11px] text-[#94A3B8]">Capital Gain (% ต่อปี)</div>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <input type="number" step="0.5" min="-20" max="60" value="${asset.capGainPct}"
+                      oninput="updateAssetField('${asset.id}', 'capGainPct', this.value, false)"
+                      class="w-20 bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 text-right font-bold text-[#10B981] tabular-num" />
+                    <span class="text-xs text-[#94A3B8]">%</span>
+                  </div>
+                </div>
+
+                <!-- Dividend Configuration -->
+                <div class="space-y-2">
+                  <div class="text-xs font-semibold text-[#94A3B8]">รูปแบบเงินปันผล:</div>
+                  <div class="grid grid-cols-3 gap-1 bg-[#121822] p-1 rounded-xl border border-[#1E293B]">
+                    <button onclick="updateAssetField('${asset.id}', 'divMode', 'none', true)"
+                      class="py-2 rounded-lg text-xs font-bold ${asset.divMode === 'none' ? 'bg-[#182030] text-[#F1F5F9]' : 'text-[#94A3B8]'}">
+                      ไม่มีปันผล
+                    </button>
+                    <button onclick="updateAssetField('${asset.id}', 'divMode', 'yield', true)"
+                      class="py-2 rounded-lg text-xs font-bold ${asset.divMode === 'yield' ? 'bg-[#F59E0B] text-[#0A0E14]' : 'text-[#94A3B8]'}">
+                      ระบุ % ต่อปี
+                    </button>
+                    <button onclick="updateAssetField('${asset.id}', 'divMode', 'price_dps', true)"
+                      class="py-2 rounded-lg text-xs font-bold ${asset.divMode === 'price_dps' ? 'bg-[#F59E0B] text-[#0A0E14]' : 'text-[#94A3B8]'}">
+                      ราคา & ปันผล
+                    </button>
+                  </div>
+
+                  ${asset.divMode === 'yield' ? `
+                    <div class="ios-subcard flex items-center justify-between gap-2">
+                      <span class="text-xs text-[#F1F5F9]">ปันผลเฉลี่ยต่อปี (Dividend Yield)</span>
+                      <div class="flex items-center gap-1.5 shrink-0">
+                        <input type="number" step="0.1" min="0" max="30" value="${asset.divYieldPct}"
+                          oninput="updateAssetField('${asset.id}', 'divYieldPct', this.value, false)"
+                          class="w-20 bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 text-right font-bold text-[#F59E0B] tabular-num" />
+                        <span class="text-xs text-[#94A3B8]">%</span>
+                      </div>
+                    </div>
+                  ` : ''}
+
+                  ${asset.divMode === 'price_dps' ? `
+                    <div class="ios-subcard space-y-2">
+                      <div class="grid grid-cols-2 gap-2">
+                        <div>
+                          <label class="text-[11px] text-[#94A3B8] block mb-1">ราคาหุ้น (${curr.symbol})</label>
+                          <input type="number" step="0.5" min="0.01" value="${asset.sharePrice}"
+                            oninput="updateAssetField('${asset.id}', 'sharePrice', this.value, true)"
+                            class="w-full bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 font-bold text-[#F1F5F9] tabular-num" />
+                        </div>
+                        <div>
+                          <label class="text-[11px] text-[#94A3B8] block mb-1">ปันผล/หุ้น (${curr.symbol})</label>
+                          <input type="number" step="0.1" min="0" value="${asset.dps}"
+                            oninput="updateAssetField('${asset.id}', 'dps', this.value, true)"
+                            class="w-full bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2.5 py-1.5 font-bold text-[#F59E0B] tabular-num" />
+                        </div>
+                      </div>
+                      <div class="text-xs text-[#F59E0B] font-semibold tabular-num flex justify-between pt-1">
+                        <span>คิดเป็น Yield: ${grossYield.toFixed(2)}%/ปี</span>
+                        <span>ก้อนแรกได้ ≈ ${fmtNum(foreignAmt / (asset.sharePrice || 1), 1)} หุ้น</span>
+                      </div>
+                    </div>
+                  ` : ''}
+
+                  ${asset.divMode !== 'none' ? `
+                    <div class="ios-subcard flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs text-[#94A3B8]">หักภาษีปันผล:</span>
+                        <input type="number" step="1" min="0" max="35" value="${asset.taxPct}"
+                          oninput="updateAssetField('${asset.id}', 'taxPct', this.value, false)"
+                          class="w-16 bg-[#0A0E14] border border-[#1E293B] rounded-xl px-2 py-1 text-right font-bold text-[#F1F5F9] tabular-num" />
+                        <span class="text-xs text-[#94A3B8]">%</span>
+                      </div>
+                      <label class="inline-flex items-center gap-1.5 text-xs font-bold text-[#10B981]">
+                        <input type="checkbox" ${asset.drip ? 'checked' : ''}
+                          onchange="updateAssetField('${asset.id}', 'drip', this.checked, false)"
+                          class="w-4 h-4 rounded" />
+                        <span>นำปันผลทบต้น (DRIP)</span>
+                      </label>
+                    </div>
+                  ` : ''}
+                </div>
+
+                ${state.assets.length > 1 ? `
+                  <button onclick="removeStock('${asset.id}')"
+                    class="w-full py-2.5 rounded-xl bg-[#F43F5E]/15 text-[#F43F5E] text-xs font-bold">
+                    ลบหุ้นตัวนี้ออกจากพอร์ต
+                  </button>
+                ` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateAssetField(id, field, value, rerender = false) {
+      const asset = state.assets.find(a => a.id === id);
+      if (!asset) return;
+
+      if (field === 'name' || field === 'currency' || field === 'divMode') {
+        asset[field] = value;
+      } else if (field === 'drip') {
+        asset.drip = Boolean(value);
+      } else {
+        asset[field] = parseFloat(value) || 0;
+      }
+
+      if (rerender) renderAssetBuilderCards();
+      renderOverviewSliders();
+      runSimulation();
+    }
+
+    function addNewStock() {
+      const id = 'stk_' + Date.now();
+      state.assets.push({
+        id,
+        name: `หุ้นตัวที่ ${state.assets.length + 1}`,
+        currency: 'THB',
+        initialWeight: 0,
+        dcaWeight: 0,
+        capGainPct: 8.5,
+        divMode: 'yield',
+        divYieldPct: 3.0,
+        sharePrice: 100,
+        dps: 3.0,
+        taxPct: 10,
+        drip: true
+      });
+      expandedAssetId = id;
+      renderAssetBuilderCards();
+      renderOverviewSliders();
+      runSimulation();
+      showToast('+ เพิ่มรายการหุ้นใหม่เรียบร้อยแล้ว');
+    }
+
+    function removeStock(id) {
+      if (state.assets.length <= 1) return;
+      state.assets = state.assets.filter(a => a.id !== id);
+      expandedAssetId = state.assets[0].id;
+      renderAssetBuilderCards();
+      renderOverviewSliders();
+      runSimulation();
+      showToast('ลบรายการหุ้นเรียบร้อยแล้ว');
+    }
+
+    // =========================================================================
+    // 10. GOAL & CASHFLOW INPUT HANDLERS
+    // =========================================================================
+    function stripCommas(el) {
+      el.value = String(el.value).replace(/,/g, '');
+      el.select();
+    }
+
+    function commitFormattedNumber(el, key) {
+      const val = parseFloat(String(el.value).replace(/,/g, '')) || 0;
+      state[key] = Math.max(0, val);
+      el.value = fmtNum(state[key], 0);
+      syncGoalInputsUI();
+      renderOverviewSliders();
+      renderAssetBuilderCards();
+      runSimulation();
+    }
+
+    function setTargetMode(mode) {
+      state.targetMode = mode;
+      syncGoalInputsUI();
+      runSimulation();
+    }
+
+    function setQuickTarget(val) {
+      state.targetAmountTHB = val;
+      syncGoalInputsUI();
+      runSimulation();
+    }
+
+    function setQuickInitial(val) {
+      state.initialCapitalTHB = val;
+      syncGoalInputsUI();
+      renderOverviewSliders();
+      renderAssetBuilderCards();
+      runSimulation();
+    }
+
+    function setQuickDca(val) {
+      state.monthlyDcaTHB = val;
+      syncGoalInputsUI();
+      renderOverviewSliders();
+      renderAssetBuilderCards();
+      runSimulation();
+    }
+
+    function onStepUpChange(val) {
+      state.stepUpDcaPct = Math.max(0, parseFloat(val) || 0);
+      runSimulation();
+    }
+
+    function syncGoalInputsUI() {
+      document.getElementById('inpTargetAmount').value = fmtNum(state.targetAmountTHB, 0);
+      document.getElementById('inpInitialCapital').value = fmtNum(state.initialCapitalTHB, 0);
+      document.getElementById('inpMonthlyDca').value = fmtNum(state.monthlyDcaTHB, 0);
+      document.getElementById('inpStepUpPct').value = state.stepUpDcaPct;
+
+      const hNet = document.getElementById('heroModeNetBtn');
+      const hTot = document.getElementById('heroModeTotalBtn');
+      const tNet = document.getElementById('tab3NetBtn');
+      const tTot = document.getElementById('tab3TotalBtn');
+
+      if (state.targetMode === 'net_new') {
+        hNet.className = 'py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#10B981] text-[#0A0E14]';
+        hTot.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+        tNet.className = 'py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#10B981] text-[#0A0E14]';
+        tTot.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+        document.getElementById('tab3TargetNote').textContent =
+          `พอร์ตรวมปลายทางต้องแตะ: ${fmtTHB(state.initialCapitalTHB + state.targetAmountTHB)}`;
+      } else {
+        hTot.className = 'py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#10B981] text-[#0A0E14]';
+        hNet.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+        tTot.className = 'py-2 px-2 rounded-lg text-xs font-bold transition text-center truncate bg-[#10B981] text-[#0A0E14]';
+        tNet.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center truncate text-[#94A3B8]';
+        document.getElementById('tab3TargetNote').textContent =
+          `ต้องสร้างส่วนเพิ่มสุทธิ: ${fmtTHB(Math.max(0, state.targetAmountTHB - state.initialCapitalTHB))}`;
+      }
+
+      document.getElementById('tab3SalaryHint').textContent =
+        `ฐานเงินเดือนแนะนำ (ออม 40% ของรายได้): ${fmtTHB(state.monthlyDcaTHB * 2.5)}/เดือน`;
+    }
+
+    // =========================================================================
+    // 11. CORE MONTHLY PORTFOLIO SIMULATION ENGINE
+    // =========================================================================
+    function simulatePortfolio(rebalanceYearly) {
+      const MAX_MONTHS = 600;
+      const initCap = state.initialCapitalTHB;
+      const baseDca = state.monthlyDcaTHB;
+      const stepUp = (state.stepUpDcaPct || 0) / 100;
+
+      const requiredTotalTHB = state.targetMode === 'net_new'
+        ? initCap + state.targetAmountTHB
+        : state.targetAmountTHB;
+
+      const sumInitW = state.assets.reduce((s, a) => s + Math.max(0, Number(a.initialWeight) || 0), 0);
+      const sumDcaW = state.assets.reduce((s, a) => s + Math.max(0, Number(a.dcaWeight) || 0), 0);
+
+      const simAssets = state.assets.map(a => {
+        const normInit = sumInitW > 0 ? Math.max(0, Number(a.initialWeight) || 0) / sumInitW : (1 / state.assets.length);
+        const normDca = sumDcaW > 0 ? Math.max(0, Number(a.dcaWeight) || 0) / sumDcaW : (1 / state.assets.length);
+        const grossYield = getAssetGrossYieldPct(a) / 100;
+        const tax = Math.min(1, Math.max(0, (Number(a.taxPct) || 0) / 100));
+        const netYield = grossYield * (1 - tax);
+        const annualCap = (Number(a.capGainPct) || 0) / 100;
+        const mCapRate = Math.pow(1 + annualCap, 1 / 12) - 1;
+        const mDivRate = netYield / 12;
+
+        return {
+          normInit,
+          normDca,
+          annualCap,
+          netYield,
+          mCapRate,
+          mDivRate,
+          drip: a.drip,
+          balance: initCap * normInit,
+          cashPool: 0
+        };
+      });
+
+      let cumDca = 0;
+      let cumCapGain = 0;
+      let cumNetDiv = 0;
+      let goalMonth = initCap >= requiredTotalTHB ? 0 : null;
+      let goalSnapshot = null;
+
+      const yearlyRows = [{
+        year: 0,
+        totalInvested: initCap,
+        annualDiv: 0,
+        netNewWealth: 0,
+        totalPortfolio: initCap
+      }];
+
+      let yearDivAccum = 0;
+
+      for (let m = 1; m <= MAX_MONTHS; m++) {
+        const yrIdx = Math.floor((m - 1) / 12);
+        const dcaNow = baseDca * Math.pow(1 + stepUp, yrIdx);
+        cumDca += dcaNow;
+
+        simAssets.forEach(sa => {
+          const cg = sa.balance * sa.mCapRate;
+          sa.balance += cg;
+          cumCapGain += cg;
+
+          const dv = sa.balance * sa.mDivRate;
+          cumNetDiv += dv;
+          yearDivAccum += dv;
+
+          if (sa.drip) sa.balance += dv;
+          else sa.cashPool += dv;
+
+          // Distribute monthly DCA into each stock automatically
+          sa.balance += dcaNow * sa.normDca;
+        });
+
+        if (rebalanceYearly && m % 12 === 0) {
+          const totalActive = simAssets.reduce((s, sa) => s + sa.balance, 0);
+          simAssets.forEach(sa => {
+            sa.balance = totalActive * sa.normInit;
+          });
+        }
+
+        const totalNow = simAssets.reduce((s, sa) => s + sa.balance + sa.cashPool, 0);
+
+        if (goalMonth === null && totalNow >= requiredTotalTHB) {
+          goalMonth = m;
+          const estAnnualDiv = simAssets.reduce((s, sa) => s + sa.balance * sa.netYield, 0);
+          goalSnapshot = {
+            month: m,
+            totalPortfolio: totalNow,
+            netNewWealth: totalNow - initCap,
+            initialCap: initCap,
+            cumDca,
+            cumCapGain,
+            cumNetDiv,
+            estAnnualDiv
+          };
+        }
+
+        if (m % 12 === 0) {
+          yearlyRows.push({
+            year: m / 12,
+            totalInvested: initCap + cumDca,
+            annualDiv: yearDivAccum,
+            netNewWealth: totalNow - initCap,
+            totalPortfolio: totalNow
+          });
+          yearDivAccum = 0;
+        }
+      }
+
+      if (!goalSnapshot) {
+        const last = yearlyRows[yearlyRows.length - 1];
+        const estAnnualDiv = simAssets.reduce((s, sa) => s + sa.balance * sa.netYield, 0);
+        goalSnapshot = {
+          month: MAX_MONTHS,
+          notReached: true,
+          totalPortfolio: last.totalPortfolio,
+          netNewWealth: last.netNewWealth,
+          initialCap: initCap,
+          cumDca,
+          cumCapGain,
+          cumNetDiv,
+          estAnnualDiv
+        };
+      }
+
+      const blendedCap = simAssets.reduce((s, sa) => s + sa.annualCap * 100 * (sa.normInit * 0.5 + sa.normDca * 0.5), 0);
+      const blendedDiv = simAssets.reduce((s, sa) => s + sa.netYield * 100 * (sa.normInit * 0.5 + sa.normDca * 0.5), 0);
+
+      return {
+        requiredTotalTHB,
+        goalMonth,
+        goalSnapshot,
+        blendedCagr: blendedCap + blendedDiv,
+        yearlyRows
+      };
+    }
+
+    // =========================================================================
+    // 12. RENDER DASHBOARD, HiDPI CANVAS CHART, AND YEARLY CARDS
+    // =========================================================================
+    function runSimulation(skipSliders = false) {
+      const mainSim = simulatePortfolio(state.autoRebalance);
+      const altSim = simulatePortfolio(!state.autoRebalance);
+
+      const { requiredTotalTHB, goalMonth, goalSnapshot, blendedCagr, yearlyRows } = mainSim;
+
+      // Top Header Badges
+      const goalM = (state.targetAmountTHB / 1000000).toFixed(1);
+      document.getElementById('hdrGoalBadge').textContent =
+        state.targetMode === 'net_new' ? `+${goalM}M` : `${goalM}M`;
+      document.getElementById('hdrCagrText').textContent = `CAGR ${blendedCagr.toFixed(1)}%`;
+
+      // Hero Time-to-Goal
+      if (goalSnapshot.notReached) {
+        document.getElementById('kpiTimeReached').textContent = 'เกิน 50 ปี';
+      } else {
+        const y = Math.floor(goalMonth / 12);
+        const m = goalMonth % 12;
+        const yStr = y > 0 ? `${y} ปี ` : '';
+        const mStr = m > 0 ? `${m} เดือน` : (y === 0 ? 'ทันที' : 'พอดี');
+        document.getElementById('kpiTimeReached').textContent = `${yStr}${mStr}`;
+      }
+
+      document.getElementById('kpiBlendedCagr').textContent = `${blendedCagr.toFixed(2)}%/ปี`;
+      document.getElementById('kpiTargetSummaryBanner').innerHTML =
+        state.targetMode === 'net_new'
+          ? `พอร์ตรวมปลายทางต้องแตะ <span class="text-[#F1F5F9] font-bold tabular-num">${fmtTHB(requiredTotalTHB)}</span> (ทุนต้น ${fmtCompactTHB(state.initialCapitalTHB)} + สร้างใหม่ ${fmtCompactTHB(state.targetAmountTHB)})`
+          : `เป้าหมายมูลค่าพอร์ตรวมแตะ <span class="text-[#F1F5F9] font-bold tabular-num">${fmtTHB(requiredTotalTHB)}</span>`;
+
+      document.getElementById('kpiFinalPortfolio').textContent = fmtTHB(goalSnapshot.totalPortfolio);
+      document.getElementById('kpiNetNewSub').textContent = `ส่วนเพิ่ม +${fmtCompactTHB(goalSnapshot.netNewWealth)}`;
+
+      document.getElementById('kpiMonthlyDiv').textContent = `${fmtTHB(goalSnapshot.estAnnualDiv / 12)}/ด.`;
+      document.getElementById('kpiAnnualDiv').textContent = `${fmtTHB(goalSnapshot.estAnnualDiv)}/ปี`;
+
+      const principal = goalSnapshot.initialCap + goalSnapshot.cumDca;
+      const profit = goalSnapshot.cumCapGain + goalSnapshot.cumNetDiv;
+
+      document.getElementById('kpiTotalPrincipal').textContent = fmtTHB(principal);
+      document.getElementById('kpiPrincipalSplit').textContent =
+        `ต้น ${fmtCompactTHB(goalSnapshot.initialCap)} + DCA ${fmtCompactTHB(goalSnapshot.cumDca)}`;
+
+      document.getElementById('kpiTotalProfit').textContent = '+' + fmtTHB(profit);
+      document.getElementById('kpiProfitSplit').textContent =
+        `หุ้น +${fmtCompactTHB(goalSnapshot.cumCapGain)} | ปันผล +${fmtCompactTHB(goalSnapshot.cumNetDiv)}`;
+
+      // Proportion Bar
+      const total = Math.max(1, goalSnapshot.totalPortfolio);
+      const pInit = (goalSnapshot.initialCap / total) * 100;
+      const pDca = (goalSnapshot.cumDca / total) * 100;
+      const pProf = Math.max(0, 100 - pInit - pDca);
+
+      document.getElementById('barWidthInitial').style.width = `${pInit}%`;
+      document.getElementById('barWidthDca').style.width = `${pDca}%`;
+      document.getElementById('barWidthProfit').style.width = `${pProf}%`;
+      document.getElementById('kpiProfitShareText').textContent = `กำไร ${pProf.toFixed(0)}% ของพอร์ต`;
+
+      // Rebalance Comparison Badge
+      const rebBadge = document.getElementById('rebalanceDiffBadge');
+      const collapsedRebSub = document.getElementById('collapsedSub_rebalance');
+      if (collapsedRebSub) {
+        collapsedRebSub.textContent = state.autoRebalance
+          ? `โหมด Rebalance ทุกสิ้นปี • DCA ${fmtCompactTHB(state.monthlyDcaTHB)}/ด.`
+          : `โหมดปล่อยโตตามธรรมชาติ • DCA ${fmtCompactTHB(state.monthlyDcaTHB)}/ด.`;
+      }
+      if (mainSim.goalMonth !== null && altSim.goalMonth !== null) {
+        const diff = mainSim.goalMonth - altSim.goalMonth;
+        if (diff === 0) rebBadge.textContent = 'ใช้เวลาเท่ากันทั้งสองโหมด';
+        else if (diff < 0) rebBadge.textContent = `โหมดนี้เร็วกว่า ${Math.abs(diff)} เดือน`;
+        else rebBadge.textContent = `ช้ากว่าอีกโหมด ${diff} เดือน (แต่ลดเสี่ยง)`;
+      }
+
+      // Update Reverse Target Year Calculator
+      updateReverseCalculatorUI(blendedCagr);
+
+      if (!skipSliders) renderOverviewSliders();
+
+      // Chart & Yearly Cards
+      const rangeSel = document.getElementById('chartRangeSelect').value;
+      const goalYearCeil = goalMonth !== null ? Math.max(4, Math.ceil(goalMonth / 12) + 1) : 15;
+      const maxYear = rangeSel === 'auto' ? Math.min(35, goalYearCeil) : parseInt(rangeSel, 10);
+      const chartRows = yearlyRows.filter(r => r.year <= maxYear);
+
+      const collapsedChartSub = document.getElementById('collapsedSub_chart');
+      if (collapsedChartSub) {
+        collapsedChartSub.textContent = `พอร์ตแตะ ${fmtCompactTHB(goalSnapshot.totalPortfolio)} (${document.getElementById('kpiTimeReached').textContent})`;
+      }
+
+      drawHiDpiCanvasChart(chartRows, requiredTotalTHB);
+      renderYearlyMilestoneCards(
+        yearlyRows.filter(r => r.year > 0 && r.year <= Math.max(maxYear, goalYearCeil)),
+        goalMonth ? Math.ceil(goalMonth / 12) : null
+      );
+
+      saveStateToStorage();
+    }
+
+    function drawHiDpiCanvasChart(rows, targetTHB, activeIdx = null) {
+      const canvas = document.getElementById('portfolioCanvasChart');
+      if (!canvas || rows.length === 0) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width || 360;
+      const height = rect.height || 210;
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
+
+      const padL = 48;
+      const padR = 14;
+      const padT = 14;
+      const padB = 26;
+      const plotW = width - padL - padR;
+      const plotH = height - padT - padB;
+
+      const maxVal = Math.max(
+        targetTHB * 1.08,
+        ...rows.map(r => r.totalPortfolio)
+      );
+
+      const xFor = i => padL + (rows.length <= 1 ? 0 : (i / (rows.length - 1)) * plotW);
+      const yFor = v => padT + plotH - (Math.min(maxVal, Math.max(0, v)) / maxVal) * plotH;
+
+      cachedChartPoints = rows.map((r, i) => ({
+        x: xFor(i),
+        y: yFor(r.totalPortfolio),
+        row: r
+      }));
+
+      // Horizontal Grid Lines
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.7)';
+      ctx.lineWidth = 1;
+      ctx.font = '500 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#94A3B8';
+      ctx.textAlign = 'right';
+
+      for (let g = 0; g <= 4; g++) {
+        const val = (maxVal / 4) * g;
+        const y = yFor(val);
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(width - padR, y);
+        ctx.stroke();
+
+        const lbl = val >= 1000000 ? '฿' + (val / 1000000).toFixed(0) + 'M' : '฿' + (val / 1000).toFixed(0) + 'k';
+        ctx.fillText(lbl, padL - 6, y + 3);
+      }
+
+      // Target Dashed Line
+      const yTarget = yFor(targetTHB);
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(padL, yTarget);
+      ctx.lineTo(width - padR, yTarget);
+      ctx.stroke();
+      ctx.restore();
+
+      // Principal Area & Line
+      ctx.beginPath();
+      rows.forEach((r, i) => {
+        const x = xFor(i);
+        const y = yFor(r.totalInvested);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#3B82F6';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Total Portfolio Gradient Fill + Line
+      const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+      grad.addColorStop(0, 'rgba(16, 185, 129, 0.28)');
+      grad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+      ctx.beginPath();
+      rows.forEach((r, i) => {
+        const x = xFor(i);
+        const y = yFor(r.totalPortfolio);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(xFor(rows.length - 1), padT + plotH);
+      ctx.lineTo(xFor(0), padT + plotH);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      rows.forEach((r, i) => {
+        const x = xFor(i);
+        const y = yFor(r.totalPortfolio);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#10B981';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+
+      // X-axis Year Labels
+      ctx.fillStyle = '#94A3B8';
+      ctx.textAlign = 'center';
+      const step = Math.max(1, Math.ceil(rows.length / 6));
+      rows.forEach((r, i) => {
+        if (i % step === 0 || i === rows.length - 1) {
+          ctx.fillText(`ปี ${r.year}`, xFor(i), height - 8);
+        }
+      });
+
+      // Active Hover/Touch Scrubbing Marker
+      const idx = activeIdx !== null ? activeIdx : rows.length - 1;
+      const pt = cachedChartPoints[idx];
+      if (pt) {
+        ctx.strokeStyle = 'rgba(241, 245, 249, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pt.x, padT);
+        ctx.lineTo(pt.x, padT + plotH);
+        ctx.stroke();
+
+        ctx.fillStyle = '#10B981';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0A0E14';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const readout = document.getElementById('chartHoverReadout');
+        if (readout) {
+          readout.innerHTML = `
+            <span class="text-[#F1F5F9] font-bold">สิ้นปีที่ ${pt.row.year}</span>
+            <span>พอร์ตรวม <strong class="text-[#10B981]">${fmtTHB(pt.row.totalPortfolio)}</strong> • ทุน <strong class="text-[#3B82F6]">${fmtCompactTHB(pt.row.totalInvested)}</strong></span>
+          `;
+        }
+      }
+    }
+
+    function bindCanvasTouchScrubbing() {
+      const canvas = document.getElementById('portfolioCanvasChart');
+      if (!canvas) return;
+
+      const handlePointer = (clientX) => {
+        if (!cachedChartPoints.length) return;
+        const rect = canvas.getBoundingClientRect();
+        const relX = clientX - rect.left;
+        let bestIdx = 0;
+        let bestDist = Infinity;
+        cachedChartPoints.forEach((pt, idx) => {
+          const d = Math.abs(pt.x - relX);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = idx;
+          }
+        });
+        const reqTotal = state.targetMode === 'net_new'
+          ? state.initialCapitalTHB + state.targetAmountTHB
+          : state.targetAmountTHB;
+        drawHiDpiCanvasChart(cachedChartPoints.map(p => p.row), reqTotal, bestIdx);
+      };
+
+      canvas.addEventListener('touchmove', e => {
+        if (e.touches && e.touches[0]) handlePointer(e.touches[0].clientX);
+      }, { passive: true });
+
+      canvas.addEventListener('touchstart', e => {
+        if (e.touches && e.touches[0]) handlePointer(e.touches[0].clientX);
+      }, { passive: true });
+
+      canvas.addEventListener('mousemove', e => {
+        handlePointer(e.clientX);
+      });
+    }
+
+    function renderYearlyMilestoneCards(rows, goalYr) {
+      const container = document.getElementById('yearlyCardsList');
+      const badge = document.getElementById('yearlySuccessBadge');
+      if (badge) badge.textContent = goalYr ? `ถึงเป้าปีที่ ${goalYr}` : 'เกิน 50 ปี';
+
+      container.innerHTML = rows.map(r => {
+        const isHit = goalYr !== null && r.year === goalYr;
+        const cardStyle = isHit ? 'border border-[#10B981] bg-[#10B981]/10' : '';
+
+        return `
+          <div class="ios-subcard ${cardStyle} space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-[#F1F5F9]">สิ้นปีที่ ${r.year}</span>
+                ${isHit ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#10B981] text-[#0A0E14]">สำเร็จเป้าหมาย!</span>` : ''}
+              </div>
+              <span class="text-base font-extrabold text-[#F1F5F9] tabular-num">${fmtTHB(r.totalPortfolio)}</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-1.5 border-t border-[#1E293B] text-xs tabular-num">
+              <div class="min-w-0">
+                <div class="text-[10px] text-[#94A3B8] truncate">ทุนสะสมรวม</div>
+                <div class="font-bold text-[#3B82F6] truncate">${fmtCompactTHB(r.totalInvested)}</div>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-[#94A3B8] truncate">ส่วนเพิ่มสุทธิ</div>
+                <div class="font-bold text-[#10B981] truncate">+${fmtCompactTHB(r.netNewWealth)}</div>
+              </div>
+              <div class="text-right min-w-0">
+                <div class="text-[10px] text-[#94A3B8] truncate">ปันผลเฉลี่ย/ด.</div>
+                <div class="font-bold text-[#F59E0B] truncate">${fmtCompactTHB(r.annualDiv / 12)}/ด.</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 13. PRESETS & STORAGE INITIALIZATION
+    // =========================================================================
+    function loadPreset(key, silent = false) {
+      const p = PRESETS[key];
+      if (!p) return;
+
+      state.targetMode = p.targetMode;
+      state.targetAmountTHB = p.targetAmountTHB;
+      state.initialCapitalTHB = p.initialCapitalTHB;
+      state.monthlyDcaTHB = p.monthlyDcaTHB;
+      state.stepUpDcaPct = p.stepUpDcaPct;
+      state.autoRebalance = p.autoRebalance;
+      state.assets = JSON.parse(JSON.stringify(p.assets));
+      expandedAssetId = state.assets[0]?.id || null;
+
+      syncRebalanceButtons();
+      syncGoalInputsUI();
+      renderAssetBuilderCards();
+      runSimulation();
+
+      if (!silent) showToast('โหลดแผนพอร์ตตัวอย่างเรียบร้อยแล้ว');
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem('ios_pwa_portfolio_10m_v4', JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function initApp() {
+      try {
+        const saved = localStorage.getItem('ios_pwa_portfolio_10m_v4');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state = { ...state, ...parsed };
+          expandedAssetId = state.assets[0]?.id || null;
+        } else {
+          loadPreset('sweet_spot', true);
+        }
+      } catch (e) {
+        loadPreset('sweet_spot', true);
+      }
+
+      document.getElementById('revYearSlider').value = state.reverseTargetYears || 6;
+      syncRebalanceButtons();
+      syncGoalInputsUI();
+      renderFxRatesList();
+      renderAssetBuilderCards();
+      applySecondaryModulesLayout();
+      bindCanvasTouchScrubbing();
+      runSimulation();
+      fetchLiveExchangeRates(false);
+
+      window.addEventListener('resize', () => {
+        runSimulation(true);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
